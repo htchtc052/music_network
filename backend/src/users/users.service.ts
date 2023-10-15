@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import {
-  CreateUserInput,
-  CreateUserOptions,
-} from './types/createUserInput.type';
 
 import { v4 as uuid } from 'uuid';
 import * as argon2 from 'argon2';
 import { User } from '@prisma/client';
 import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
+import { RegisterDto } from '../auth/dto/register.dto';
 
 @Injectable()
 export class UsersService {
@@ -17,24 +14,22 @@ export class UsersService {
   ) {}
 
   async createUser(
-    createUserInput: CreateUserInput,
-    createUserOptions: CreateUserOptions,
+    registerDto: RegisterDto,
+    createActivated = false,
   ): Promise<User> {
-    const hashedPassword = await argon2.hash(createUserInput.password);
-    createUserInput.password = hashedPassword;
+    const hashedPassword = await argon2.hash(registerDto.password);
+    registerDto.password = hashedPassword;
 
     let user: User;
-    if (createUserOptions.createActivated) {
+    if (createActivated) {
       user = await this.prisma.user.create({
-        data: { password: hashedPassword, ...createUserInput },
+        data: { password: hashedPassword, ...registerDto },
       });
     } else {
       const activationToken: string = uuid();
       user = await this.prisma.user.create({
-        data: { password: hashedPassword, activationToken, ...createUserInput },
+        data: { password: hashedPassword, activationToken, ...registerDto },
       });
-
-      //await this.emailService.sendActivationEmail(user);
     }
 
     return user;

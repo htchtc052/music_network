@@ -1,7 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, Validate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsFieldAlreadyExists } from '../../users/validators/isFieldAlReadyExists';
-import { Match } from '../../commons/match.decorator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'john_doe', description: 'User name' })
@@ -19,14 +18,4 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   password: string;
-
-  @ApiProperty({
-    example: 'Strong_password',
-    description: 'User password confirm',
-  })
-  @IsNotEmpty()
-  @Match(RegisterDto, (s: RegisterDto) => s.password, {
-    message: 'Password confirm not match',
-  })
-  passwordConfirm: string;
 }

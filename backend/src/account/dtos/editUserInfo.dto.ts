@@ -5,8 +5,8 @@ export class EditUserInfoDto extends PickType(RegisterDto, [
   'username',
 ] as const) {
   @ApiProperty({ example: 'John', required: false })
-  firstname?: string;
+  firstName: string;
 
   @ApiProperty({ example: 'Doe', required: false })
-  lastname?: string;
+  lastName: string;
 }

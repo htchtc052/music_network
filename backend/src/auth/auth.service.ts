@@ -13,7 +13,6 @@ import * as argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { Token, User } from '@prisma/client';
 import { AuthResponse } from './responses/auth.response';
-import { CreateUserInput } from '../users/types/createUserInput.type';
 import { UserEntity } from '../users/entities/user.entity';
 import { TokensResponse } from './responses/tokens.response';
 import { RegisterDto } from './dto/register.dto';
@@ -30,15 +29,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    const createUserInput: CreateUserInput = {
-      username: registerDto.username,
-      email: registerDto.email,
-      password: registerDto.password,
-    };
-
-    const user = await this.usersService.createUser(createUserInput, {
-      createActivated: false,
-    });
+    const user = await this.usersService.createUser(registerDto);
 
     const tokens = await this.generateAndSaveTokens(user);
     return {
