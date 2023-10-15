@@ -123,7 +123,7 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  describe('Account routes', () => {
+  describe('Account routes with authorized user', () => {
     let accessToken: string;
     beforeEach(async () => {
       const authResponse: AuthResponse = await authService.login({
@@ -142,6 +142,14 @@ describe('AppController (e2e)', () => {
       expect(res.body.user.email).toEqual(email);
     });
 
+    it('/auth/me (Get) - wrong access token', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/account/me')
+        .set('Authorization', 'Bearer ' + faker.string.sample(5));
+
+      expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
+    });
+
     it('/account/editInfo (PUT) - success', async () => {
       const username = faker.internet.userName();
       const firstName = faker.person.firstName();
@@ -157,6 +165,18 @@ describe('AppController (e2e)', () => {
       expect(res.body.user.username).toEqual(username);
       expect(res.body.user.firstName).toEqual(firstName);
       expect(res.body.user.lastName).toEqual(lastName);
+    });
+  });
+
+  describe('Account routes with no auth', () => {
+    it('/auth/me (Get) - success', async () => {
+      const res = await request(app.getHttpServer()).get('/account/me');
+      expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('/account/editInfo (PUT) - success', async () => {
+      const res = await request(app.getHttpServer()).put('/account/editInfo');
+      expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
   });
 });
