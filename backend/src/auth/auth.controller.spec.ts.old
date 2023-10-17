@@ -1,3 +1,0 @@
-describe('Auth', () => {
-  expect(true).toBeDefined();
-});
