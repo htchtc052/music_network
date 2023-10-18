@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { User } from '@prisma/client';
-import { JwtTokenDecoded } from '../types/JwtPayload.type';
+import { JwtTokenDecoded } from '../../tokens/types/JwtPayload.type';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { UsersService } from '../../users/users.service';
 import { RequestWithAuthUser } from '../../users/types/requestsWithUsers.type';

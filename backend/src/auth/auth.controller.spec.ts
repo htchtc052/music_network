@@ -2,11 +2,12 @@ import { BadRequestException, INestApplication } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { faker } from '@faker-js/faker';
 import { UserEntity } from '../users/entities/user.entity';
 import { AuthResponse } from './responses/auth.response';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { mockUserEntity } from '../users/mocks/mockUserEntity';
+import { mockTokensResponse } from './mocks/mockTokensResponse';
 
 describe('AuthController', () => {
   let app: INestApplication;
@@ -15,7 +16,7 @@ describe('AuthController', () => {
     register: jest.fn(),
     login: jest.fn(),
   };
-  const mockJwtAuthGuard = jest.fn();
+  //const mockJwtAuthGuard = jest.fn();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,17 +39,11 @@ describe('AuthController', () => {
   });
 
   describe('Auth routes', () => {
-    const mockAuthUser: UserEntity = new UserEntity({
-      username: faker.internet.userName(),
-      email: faker.internet.email(),
-    });
+    const mockAuthUser: UserEntity = mockUserEntity();
 
-    const mockAuthUserPassword = faker.internet.password();
-
+    const tokens = mockTokensResponse();
     const mockAuthResponse: AuthResponse = {
-      accessToken: faker.string.uuid(),
-      refreshToken: faker.string.uuid(),
-      tokenId: faker.string.uuid(),
+      ...tokens,
       user: mockAuthUser,
     };
 
@@ -56,7 +51,7 @@ describe('AuthController', () => {
       const registerDto: RegisterDto = {
         username: mockAuthUser.username,
         email: mockAuthUser.email,
-        password: mockAuthUserPassword,
+        password: mockAuthUser.password,
       };
 
       jest
@@ -77,7 +72,7 @@ describe('AuthController', () => {
         .mockImplementation((loginDto: LoginDto) => {
           if (
             loginDto.email == mockAuthUser.email &&
-            loginDto.password == mockAuthUserPassword
+            loginDto.password == mockAuthUser.password
           ) {
             return mockAuthResponse;
           } else {
@@ -88,7 +83,7 @@ describe('AuthController', () => {
       it('should login user with valid credentials', async () => {
         const loginDto: LoginDto = {
           email: mockAuthUser.email,
-          password: mockAuthUserPassword,
+          password: mockAuthUser.password,
         };
 
         const authResponse: AuthResponse = await authController.login(loginDto);
@@ -102,19 +97,6 @@ describe('AuthController', () => {
           email: 'invalid email',
           password: 'invalid password',
         };
-
-        jest
-          .spyOn(mockAuthService, 'login')
-          .mockImplementation((loginDto: LoginDto) => {
-            if (
-              loginDto.email === mockAuthUser.email &&
-              loginDto.password === mockAuthUser.password
-            ) {
-              return mockAuthResponse;
-            } else {
-              throw new BadRequestException();
-            }
-          });
 
         expect(() => authController.login(loginDto)).toThrow(
           BadRequestException,

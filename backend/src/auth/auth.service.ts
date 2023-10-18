@@ -3,35 +3,29 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from 'nestjs-prisma';
-import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
-import { v4 as uuidv4 } from 'uuid';
-import { Token, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { AuthResponse } from './responses/auth.response';
 import { UserEntity } from '../users/entities/user.entity';
 import { TokensResponse } from './responses/tokens.response';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtTokenDecoded } from './types/JwtPayload.type';
+import { JwtTokenDecoded } from '../tokens/types/JwtPayload.type';
+import { TokensService } from '../tokens/tokens.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
     private usersService: UsersService,
-    private configService: ConfigService,
+    private tokensService: TokensService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    const user = await this.usersService.createUser(registerDto);
+    const user: User = await this.usersService.createUser(registerDto);
 
-    const tokens = await this.generateAndSaveTokens(user);
+    const tokens = await this.tokensService.generateAndSaveTokens(user);
     return {
       user: new UserEntity(user),
       ...tokens,
@@ -43,56 +37,39 @@ export class AuthService {
 
     if (!user) throw new BadRequestException('User does not exist');
 
-    const passwordMatches = await argon2.verify(
-      user.password,
-      loginDto.password,
-    );
-
-    if (!passwordMatches)
+    if (!(await this.validatePassword(user.password, loginDto.password)))
       throw new BadRequestException('Password is incorrect');
 
-    const tokens = await this.generateAndSaveTokens(user);
+    const tokens: TokensResponse =
+      await this.tokensService.generateAndSaveTokens(user);
     return {
       user: new UserEntity(user),
       ...tokens,
     };
   }
 
-  async logout(tokenId: string) {
-    if (!tokenId) {
+  async validatePassword(
+    password: string,
+    userPassword: string,
+  ): Promise<boolean> {
+    return await argon2.verify(password, userPassword);
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) {
       throw new BadRequestException('Token ID required');
     }
 
-    const foundToken: Token = await this.prisma.token.findUnique({
-      where: { id: tokenId },
-    });
-
-    if (foundToken) {
-      await this.prisma.token.delete({ where: { id: tokenId } });
-    }
+    await this.tokensService.deleteToken(refreshToken);
   }
 
-  async refreshTokens(
-    tokenId: string,
-    refreshToken: string,
-  ): Promise<TokensResponse> {
-    if (!tokenId || !refreshToken) {
-      throw new BadRequestException('Token ID and refresh token are required');
+  async refreshTokens(refreshToken: string): Promise<TokensResponse> {
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
     }
 
-    let tokenPayload: JwtTokenDecoded;
-    try {
-      tokenPayload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      });
-    } catch (err) {
-      console.error(err);
-
-      throw new UnauthorizedException('Invalid token');
-    }
-    if (!tokenPayload) {
-      throw new UnauthorizedException('Refresh token invalid');
-    }
+    let tokenPayload: JwtTokenDecoded =
+      await this.tokensService.decodeRefreshToken(refreshToken);
 
     if (tokenPayload.exp * 1000 < Date.now()) {
       throw new HttpException(
@@ -101,81 +78,12 @@ export class AuthService {
       );
     }
 
-    const foundToken: Token = await this.prisma.token.findUnique({
-      where: {
-        id: tokenId,
-      },
-    });
-
-    if (foundToken == null) {
-      throw new HttpException(
-        'Refresh token not found',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const isMatch = await argon2.verify(
-      foundToken.refreshToken ?? '',
+    const user: User = await this.tokensService.getUserByRefreshToken(
       refreshToken,
     );
 
-    if (!isMatch) {
-      throw new HttpException(
-        'Refresh token not found',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
+    await this.tokensService.deleteToken(refreshToken);
 
-    const user: User = await this.prisma.user.findUnique({
-      where: { id: foundToken.userId },
-    });
-
-    await this.prisma.token.delete({ where: { id: foundToken.id } });
-
-    return this.generateAndSaveTokens(user);
-  }
-
-  async generateAndSaveTokens(user: User): Promise<TokensResponse> {
-    const accessToken = await this.signAccessToken(user);
-    const refreshToken = await this.signRefreshToken(user);
-
-    const refreshTokenDecoded: JwtTokenDecoded = this.jwtService.decode(
-      refreshToken,
-    ) as JwtTokenDecoded | null;
-
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-
-    const token: Token = await this.prisma.token.create({
-      data: {
-        user: { connect: { id: user.id } },
-        refreshToken: hashedRefreshToken,
-        expiresAt: new Date(refreshTokenDecoded.iat * 1000),
-        createdAt: new Date(refreshTokenDecoded.exp * 1000),
-      },
-    });
-
-    return { accessToken, refreshToken, tokenId: token.id };
-  }
-
-  private async signAccessToken(user: User): Promise<string> {
-    return this.jwtService.signAsync(
-      { sid: uuidv4() },
-      {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_LIFE'),
-        subject: user.id.toString(),
-      },
-    );
-  }
-
-  private async signRefreshToken(user: User): Promise<string> {
-    return this.jwtService.signAsync(
-      { sid: uuidv4() },
-      {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_LIFE'),
-        subject: user.id.toString(),
-      },
-    );
+    return this.tokensService.generateAndSaveTokens(user);
   }
 }

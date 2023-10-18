@@ -47,8 +47,6 @@ export class AuthController {
   @Post('refreshTokens')
   refreshTokens(@Req() req: Request): Promise<TokensResponse> {
     const refreshToken: string = req.body['refreshToken'];
-    const tokenId: string = req.body['tokenId'];
-
-    return this.authService.refreshTokens(tokenId, refreshToken);
+    return this.authService.refreshTokens(refreshToken);
   }
 }

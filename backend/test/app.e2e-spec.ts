@@ -53,8 +53,7 @@ describe('AppController (e2e)', () => {
         });
 
       expect(res.statusCode).toEqual(HttpStatus.CREATED);
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.refreshToken).toBeDefined();
+      expect(res.body.tokens).toBeDefined();
       expect(res.body.user.email).toEqual(email);
     });
 
@@ -78,8 +77,7 @@ describe('AppController (e2e)', () => {
       });
 
       expect(res.statusCode).toEqual(HttpStatus.OK);
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.refreshToken).toBeDefined();
+      expect(res.body.tokens).toBeDefined();
       expect(res.body.user.email).toEqual(email);
     });
 
@@ -112,14 +110,11 @@ describe('AppController (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/auth/refreshTokens')
         .send({
-          tokenId: authResponse.tokenId,
-          refreshToken: authResponse.refreshToken,
+          refreshToken: authResponse.tokens.refreshToken,
         });
 
       expect(res.statusCode).toEqual(HttpStatus.OK);
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.refreshToken).toBeDefined();
-      expect(res.body.tokenId).toBeDefined();
+      expect(res.body.tokens).toBeDefined();
     });
   });
 
@@ -130,7 +125,7 @@ describe('AppController (e2e)', () => {
         email,
         password,
       });
-      accessToken = authResponse.accessToken;
+      accessToken = authResponse.tokens.accessToken;
     });
 
     it('/auth/me (Get) - success', async () => {
