@@ -13,26 +13,19 @@ export class UsersService {
     private prisma: PrismaService, //  private emailService: EmailService,
   ) {}
 
-  async createUser(
-    registerDto: RegisterDto,
-    createActivated = false,
-  ): Promise<User> {
-    const hashedPassword = await argon2.hash(registerDto.password);
-    registerDto.password = hashedPassword;
+  async createUser(registerDto: RegisterDto): Promise<User> {
+    const hashedPassword = await this.hashPassword(registerDto.password);
 
-    let user: User;
-    if (createActivated) {
-      user = await this.prisma.user.create({
-        data: { password: hashedPassword, ...registerDto },
-      });
-    } else {
-      const activationToken: string = uuid();
-      user = await this.prisma.user.create({
-        data: { password: hashedPassword, activationToken, ...registerDto },
-      });
-    }
+    const activationToken: string = uuid();
+    const user: User = await this.prisma.user.create({
+      data: { password: hashedPassword, activationToken, ...registerDto },
+    });
 
     return user;
+  }
+
+  async hashPassword(password: string): Promise<string> {
+    return argon2.hash(password);
   }
 
   editInfo(user: User, editUserInfoDto: EditUserInfoDto): Promise<User> {

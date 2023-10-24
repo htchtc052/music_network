@@ -76,7 +76,6 @@ describe('AuthService', () => {
       jest
         .spyOn(authService, 'validatePassword')
         .mockImplementation(async (hashedPassword, providedPassword) => {
-          console.debug(hashedPassword, providedPassword);
           return argon2.verify(hashedPassword, providedPassword);
         });
 

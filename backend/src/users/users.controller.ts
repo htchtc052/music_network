@@ -12,19 +12,19 @@ import { IsOwner } from './decorators/isOwner.decorator';
 import { UserEntity } from './entities/user.entity';
 import { TracksService } from '../tracks/tracks.service';
 
-@Controller('users/:id')
+@Controller('users')
 export class UsersController {
   constructor(private tracksService: TracksService) {}
 
   @Public()
-  @Get()
+  @Get(':id')
   @UseInterceptors(ClassSerializerInterceptor)
   async getUserById(@UserProfile() userProfile: User): Promise<UserEntity> {
     return new UserEntity(userProfile);
   }
 
   @Public()
-  @Get('tracks')
+  @Get(':id/tracks')
   @UseInterceptors(TransformTrackInterceptor)
   async getUserTracks(
     @UserProfile() userProfile: User,

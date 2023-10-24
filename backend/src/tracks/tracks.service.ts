@@ -1,17 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { Track, TrackFile, User } from '@prisma/client';
 import { TrackEntity } from './entities/track.entity';
-import { ConfigService } from '@nestjs/config';
 import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
 
 @Injectable()
 @Injectable()
 export class TracksService {
-  constructor(
-    private prisma: PrismaService,
-    private configService: ConfigService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async createTrack(
     uploadedTrackFile: Express.Multer.File,
@@ -23,18 +19,44 @@ export class TracksService {
 
     const file: TrackFile = await this.prisma.trackFile.create({
       data: {
-        fileName: uploadedTrackFile.filename,
         fileSize: uploadedTrackFile.size,
-        filePath:
-          this.configService.get<string>('BACKEND_URL') +
-          '/' +
-          uploadedTrackFile.path,
+        filePath: uploadedTrackFile.path,
         mimetype: uploadedTrackFile.mimetype,
         trackId: track.id,
       },
     });
 
     return { ...track, file };
+  }
+
+  async editInfo(
+    track: Track,
+    editTrackInfoDto: EditTrackInfoDto,
+  ): Promise<Track> {
+    const updatedTrack: Track = await this.prisma.track.update({
+      where: { id: track.id },
+      data: {
+        title: editTrackInfoDto.title,
+        description: editTrackInfoDto.description,
+        hiddenDescription: editTrackInfoDto.hiddenDescription,
+        private: editTrackInfoDto.private,
+      },
+      include: {
+        file: true,
+      },
+    });
+
+    return updatedTrack;
+  }
+
+  async deleteTrack(track: Track): Promise<Track> {
+    const deletedTrack = await this.prisma.track.update({
+      where: { id: track.id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+    return deletedTrack;
   }
 
   async findWithFileById(id: number): Promise<Track> {
@@ -47,10 +69,6 @@ export class TracksService {
         file: true,
       },
     });
-
-    if (!track) {
-      throw new NotFoundException('Track not found');
-    }
 
     return track;
   }
@@ -74,34 +92,5 @@ export class TracksService {
     });
 
     return tracks;
-  }
-
-  async editInfo(
-    track: Track,
-    editTrackInfoDto: EditTrackInfoDto,
-  ): Promise<Track> {
-    const updatedTrack: Track = await this.prisma.track.update({
-      where: { id: track.id },
-      data: {
-        title: editTrackInfoDto.title,
-        description: editTrackInfoDto.description,
-        hiddenDescription: editTrackInfoDto.hiddenDescription,
-        private: editTrackInfoDto.private,
-      },
-      include: {
-        file: true,
-      },
-    });
-
-    return updatedTrack;
-  }
-
-  async deleteTrack(track: Track): Promise<void> {
-    await this.prisma.track.update({
-      where: { id: track.id },
-      data: {
-        deletedAt: new Date(),
-      },
-    });
   }
 }

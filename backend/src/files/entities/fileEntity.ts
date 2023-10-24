@@ -9,10 +9,6 @@ export class FileEntity implements TrackFile {
 
   @ApiProperty()
   @Expose()
-  fileName: string;
-
-  @ApiProperty()
-  @Expose()
   filePath: string;
 
   @ApiProperty()

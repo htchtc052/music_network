@@ -89,8 +89,8 @@ export class TracksController {
   @UseGuards(PoliciesGuard)
   async deleteTrack(@Req() request: RequestWithTrack): Promise<string> {
     const track: Track = request.track;
-    await this.tracksService.deleteTrack(track);
+    const deletedTrack: Track = await this.tracksService.deleteTrack(track);
 
-    return 'Track successfully deleted';
+    return `Track ${deletedTrack.id} successfully deleted`;
   }
 }
