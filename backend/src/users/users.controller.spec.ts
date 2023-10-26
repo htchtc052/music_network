@@ -5,6 +5,7 @@ import { TracksService } from '../tracks/tracks.service';
 import { Track, User } from '@prisma/client';
 import { mockTracks } from '../tracks/mocks/mockTracks';
 import { mockUser } from './mocks/mockUser';
+import { UserResponse } from './responses/user.response';
 
 describe('UserController', () => {
   let app: INestApplication;
@@ -38,9 +39,11 @@ describe('UserController', () => {
     const userProfileMock: User = mockUser();
 
     it('should return user profile', async () => {
-      const result = await usersController.getUserById(userProfileMock);
+      const result: UserResponse = await usersController.getUserById(
+        userProfileMock,
+      );
 
-      expect(result.username).toEqual(userProfileMock.username);
+      expect(result.user).toEqual(userProfileMock);
     });
 
     it('should return user tracks', async () => {

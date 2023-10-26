@@ -47,8 +47,8 @@ describe('TracksService', () => {
     } as TrackFile);
 
     const result: TrackEntity = await tracksService.createTrack(
-      uploadedTrackFileMock,
       userMock,
+      uploadedTrackFileMock,
     );
 
     expect(prisma.track.create).toHaveBeenCalledWith({
@@ -123,7 +123,6 @@ describe('TracksService', () => {
 
   describe('GetTracksByUser', () => {
     const tracksMock: Track[] = [trackMock];
-    console.debug(tracksMock);
 
     it('should return tracks for user as owner', async () => {
       prisma.track.findMany = jest.fn().mockResolvedValueOnce(tracksMock);

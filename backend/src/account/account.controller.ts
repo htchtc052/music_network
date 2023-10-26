@@ -7,13 +7,11 @@ import {
   HttpCode,
   HttpStatus,
   Put,
-  Req,
   UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { EditUserInfoDto } from './dtos/editUserInfo.dto';
 import { UserEntity } from '../users/entities/user.entity';
-import { RequestWithAuthUser } from '../users/types/requestsWithUsers.type';
 import { AuthUser } from '../auth/decorators/authUser.decorator';
 import { User } from '@prisma/client';
 import { UserResponse } from '../users/responses/user.response';
@@ -35,13 +33,11 @@ export class AccountController {
   @Put('editInfo')
   @UseInterceptors(ClassSerializerInterceptor)
   async editInfo(
+    @AuthUser() authUser: User,
     @Body() editUserInfoDto: EditUserInfoDto,
-    @Req() request: RequestWithAuthUser,
   ): Promise<UserResponse> {
-    let user = request.authUser;
+    authUser = await this.usersService.editInfo(authUser, editUserInfoDto);
 
-    user = await this.usersService.editInfo(user, editUserInfoDto);
-
-    return { user: new UserEntity(user) };
+    return { user: new UserEntity(authUser) };
   }
 }

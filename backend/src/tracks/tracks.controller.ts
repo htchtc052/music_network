@@ -27,6 +27,7 @@ import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
 import { EditTrackHandler } from '../casl/policies/editTrack.handler';
 import { TransformTrackInterceptor } from './interceptors/transormTrack.interceptor';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentTrack } from './decorators/currentTrack.decorator';
 
 @Controller('tracks')
 export class TracksController {
@@ -53,7 +54,7 @@ export class TracksController {
     @UploadedFile()
     uploadedFile: Express.Multer.File,
   ): Promise<TrackEntity> {
-    return this.tracksService.createTrack(uploadedFile, authUser);
+    return this.tracksService.createTrack(authUser, uploadedFile);
   }
 
   @ApiOperation({ summary: 'Get track by id' })
@@ -72,10 +73,9 @@ export class TracksController {
   @UseGuards(PoliciesGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   async editInfo(
+    @CurrentTrack() track: Track,
     @Body() editTrackInfoDto: EditTrackInfoDto,
-    @Req() request: RequestWithTrack,
   ): Promise<TrackEntity> {
-    const track: Track = request.track;
     const updatedTrack = await this.tracksService.editInfo(
       track,
       editTrackInfoDto,
@@ -87,8 +87,7 @@ export class TracksController {
   @Delete(':id/delete')
   @CheckPolicies(EditTrackHandler)
   @UseGuards(PoliciesGuard)
-  async deleteTrack(@Req() request: RequestWithTrack): Promise<string> {
-    const track: Track = request.track;
+  async deleteTrack(@CurrentTrack() track: Track): Promise<string> {
     const deletedTrack: Track = await this.tracksService.deleteTrack(track);
 
     return `Track ${deletedTrack.id} successfully deleted`;

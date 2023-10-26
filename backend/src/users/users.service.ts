@@ -18,7 +18,12 @@ export class UsersService {
 
     const activationToken: string = uuid();
     const user: User = await this.prisma.user.create({
-      data: { password: hashedPassword, activationToken, ...registerDto },
+      data: {
+        password: hashedPassword,
+        email: registerDto.email,
+        username: registerDto.username,
+        activationToken,
+      },
     });
 
     return user;

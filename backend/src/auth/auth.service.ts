@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const user: User = await this.usersService.findByEmail(loginDto.email);
 
     if (!user) throw new BadRequestException('User does not exist');
 
@@ -52,7 +52,12 @@ export class AuthService {
     password: string,
     userPassword: string,
   ): Promise<boolean> {
-    return await argon2.verify(password, userPassword);
+    try {
+      return await argon2.verify(password, userPassword);
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   }
 
   async logout(refreshToken: string) {

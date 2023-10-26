@@ -11,6 +11,7 @@ import { Track, User } from '@prisma/client';
 import { IsOwner } from './decorators/isOwner.decorator';
 import { UserEntity } from './entities/user.entity';
 import { TracksService } from '../tracks/tracks.service';
+import { UserResponse } from './responses/user.response';
 
 @Controller('users')
 export class UsersController {
@@ -19,8 +20,8 @@ export class UsersController {
   @Public()
   @Get(':id')
   @UseInterceptors(ClassSerializerInterceptor)
-  async getUserById(@UserProfile() userProfile: User): Promise<UserEntity> {
-    return new UserEntity(userProfile);
+  async getUserById(@UserProfile() userProfile: User): Promise<UserResponse> {
+    return { user: new UserEntity(userProfile) };
   }
 
   @Public()
