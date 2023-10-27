@@ -10,6 +10,10 @@ import { RegisterDto } from '../src/auth/dto/register.dto';
 import { LoginDto } from '../src/auth/dto/login.dto';
 import { AuthResponse } from '../src/auth/responses/auth.response';
 import { EditUserInfoDto } from '../src/account/dtos/editUserInfo.dto';
+import { join } from 'path';
+import { UserEntity } from '../src/users/entities/user.entity';
+import { TrackEntity } from '../src/tracks/entities/track.entity';
+import { EditTrackInfoDto } from '../src/tracks/dtos/editTrackInfo.dto';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -76,7 +80,6 @@ describe('AppController (e2e)', () => {
     });
     describe('Login user', () => {
       it('/auth/login (POST) - success', async () => {
-        console.debug(credentialsValid);
         const res = await request(app.getHttpServer())
           .post('/auth/login')
           .send(credentialsValid);
@@ -128,7 +131,7 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  describe('Account routes with authorized user', () => {
+  describe('Account routes with need auth as auth user', () => {
     let accessToken: string;
     beforeEach(async () => {
       const authResponse: AuthResponse = await authService.login(
@@ -144,14 +147,6 @@ describe('AppController (e2e)', () => {
 
       expect(res.statusCode).toEqual(HttpStatus.OK);
       expect(res.body.user).toBeDefined();
-    });
-
-    it('/auth/me (Get) - wrong access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/account/me')
-        .set('Authorization', 'Bearer ' + 'wrong token');
-
-      expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
     });
 
     it('/account/editInfo (PUT) - success', async () => {
@@ -173,15 +168,120 @@ describe('AppController (e2e)', () => {
       expect(res.body.user.lastName).toEqual(editUserInfoDto.lastName);
     });
   });
-  describe('Account routes with no auth', () => {
+
+  describe('Account routes with need auth as unauthorized', () => {
     it('/account/me (Get) - no auth', async () => {
       const res = await request(app.getHttpServer()).get('/account/me');
       expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('/account/editInfo (PUT) - no auth', async () => {
-      const res = await request(app.getHttpServer()).put('/account/editInfo');
-      expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
+    it('/auth/me (Get) - wrong access token', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/account/me')
+        .set('Authorization', 'Bearer ' + 'wrong token');
+
+      expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
+    });
+  });
+
+  describe('User public route', () => {
+    it('/users/:id (Get) - success', async () => {
+      const userId = 1;
+      const res = await request(app.getHttpServer()).get('/users/' + userId);
+
+      expect(res.statusCode).toEqual(HttpStatus.OK);
+      expect(res.body.user.id).toEqual(userId);
+    });
+  });
+
+  describe('User tracks routes', () => {
+    let accessToken: string;
+    let authUser: UserEntity;
+    beforeEach(async () => {
+      const authResponse: AuthResponse = await authService.login(
+        credentialsValid,
+      );
+      accessToken = authResponse.tokens.accessToken;
+      authUser = authResponse.user;
+    });
+
+    let track: TrackEntity;
+
+    describe('Create track', () => {
+      it('/tracks (POST) - success', async () => {
+        const fileName = 'test_song.mp3';
+        const filePath = join(__dirname, 'fixtures', fileName);
+
+        const res = await request(app.getHttpServer())
+          .post('/tracks')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .attach('trackFile', filePath);
+
+        expect(res.statusCode).toEqual(HttpStatus.CREATED);
+
+        expect(res.body.userId).toEqual(authUser.id);
+        expect(res.body.title).toEqual(fileName);
+
+        track = res.body;
+      });
+
+      it('/tracks (POST) - error: invalid file type', async () => {
+        const fileName = 'test_image.jpg';
+        const filePath = join(__dirname, 'fixtures', fileName);
+
+        const res = await request(app.getHttpServer())
+          .post('/tracks')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .attach('trackFile', filePath);
+
+        expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+        expect(res.body.message).toEqual('File must be an mp3');
+      });
+    });
+
+    describe('Track routes as owner', () => {
+      it('/tracks/:id/editInfo (PUT) - success', async () => {
+        const editTrackInfoDto: EditTrackInfoDto = {
+          title: 'Track 1 title',
+          description: 'Track 1 description',
+          hiddenDescription: 'Track 1 hidden description',
+          private: false,
+        };
+
+        const res = await request(app.getHttpServer())
+          .put('/tracks/' + track.id + '/editInfo')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(editTrackInfoDto);
+
+        expect(res.statusCode).toEqual(HttpStatus.OK);
+        expect(res.body.title).toEqual(editTrackInfoDto.title);
+        expect(res.body.description).toEqual(editTrackInfoDto.description);
+        expect(res.body.hiddenDescription).toEqual(
+          editTrackInfoDto.hiddenDescription,
+        );
+      });
+
+      it('/tracks/:id (GET) - success', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/tracks/' + track.id)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        expect(res.statusCode).toEqual(HttpStatus.OK);
+        expect(res.body.id).toEqual(track.id);
+        expect(typeof res.body.hiddenDescription).toBe('string');
+      });
+    });
+
+    describe('Track route as guest. Not access to hidden description', () => {
+      it('/tracks/:id (GET) - success', async () => {
+        const res = await request(app.getHttpServer()).get(
+          '/tracks/' + track.id,
+        );
+
+        expect(res.statusCode).toEqual(HttpStatus.OK);
+        expect(res.body.id).toEqual(track.id);
+        expect(typeof res.body.hiddenDescription).toBe('undefined');
+      });
     });
   });
 });

@@ -3,8 +3,6 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from 'nestjs-prisma';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import * as path from 'path';
 import * as Joi from 'joi';
 import * as process from 'process';
 import { JwtAuthGuard } from './auth/guards/jwtAuthGuard';
@@ -12,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CaslModule } from './casl/casl.module';
 import { AccountModule } from './account/account.module';
 import { JwtModule, JwtService } from '@nestjs/jwt';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -27,6 +26,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
         DATABASE_URL: Joi.string().required(),
         FRONTEND_URL: Joi.string().required(),
         BACKEND_URL: Joi.string().required(),
+        UPLOADS_DIR: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),
         JWT_ACCESS_LIFE: Joi.string().required(),
@@ -46,29 +46,25 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
     PrismaModule.forRootAsync({
       isGlobal: true,
       useFactory: async (configService: ConfigService) => {
-        //const databaseUrl = configService.get('DATABASE_URL');
-
-        //console.debug(`Prisma before connect to database: ${databaseUrl}`);
-        console.debug(
-          `Prisma before connect to database: ${process.env.DATABASE_URL}`,
-        );
+        //  console.debug(
+        //   `Prisma before connect to database: ${process.env.DATABASE_URL}`,
+        // );
 
         return {
           prismaOptions: {
             log: configService.get('PRISMA_LOG').split(','),
           },
-          // datasources: {
-          //   db: {
-          //     url: databaseUrl,
-          //   },
-          // },
         };
       },
       inject: [ConfigService],
     }),
-    ServeStaticModule.forRoot({
-      rootPath: path.join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads', // Optional: This sets the root URL for serving static files.
+    ServeStaticModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const rootPath = configService.get('UPLOADS_PATH');
+        return [{ rootPath }];
+      },
+      inject: [ConfigService], // добавляем зависимость ConfigService
     }),
   ],
   controllers: [],

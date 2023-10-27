@@ -52,9 +52,9 @@ export class TracksController {
   createTrack(
     @AuthUser() authUser: User,
     @UploadedFile()
-    uploadedFile: Express.Multer.File,
+    uploadedTrackFile: Express.Multer.File,
   ): Promise<TrackEntity> {
-    return this.tracksService.createTrack(authUser, uploadedFile);
+    return this.tracksService.createTrack(authUser, uploadedTrackFile);
   }
 
   @ApiOperation({ summary: 'Get track by id' })
@@ -71,12 +71,12 @@ export class TracksController {
   @Put(':id/editInfo')
   @CheckPolicies(EditTrackHandler)
   @UseGuards(PoliciesGuard)
-  @UseInterceptors(ClassSerializerInterceptor)
+  @UseInterceptors(TransformTrackInterceptor)
   async editInfo(
     @CurrentTrack() track: Track,
     @Body() editTrackInfoDto: EditTrackInfoDto,
   ): Promise<TrackEntity> {
-    const updatedTrack = await this.tracksService.editInfo(
+    const updatedTrack: Track = await this.tracksService.editInfo(
       track,
       editTrackInfoDto,
     );
