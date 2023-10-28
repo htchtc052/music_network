@@ -11,6 +11,7 @@ import { CaslModule } from './casl/casl.module';
 import { AccountModule } from './account/account.module';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -61,7 +62,11 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     ServeStaticModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const rootPath = configService.get('UPLOADS_PATH');
+        const rootPath = join(
+          __dirname,
+          '..',
+          configService.get('UPLOADS_DIR'),
+        );
         return [{ rootPath }];
       },
       inject: [ConfigService], // добавляем зависимость ConfigService

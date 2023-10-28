@@ -12,10 +12,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         storage: diskStorage({
-          destination: configService.get<string>('UPLOADS_DIR'),
+          destination: configService.get('UPLOADS_DIR'),
           filename: (req: any, file: any, cb: any) => {
             const generatedName = uuid() + extname(file.originalname);
-            //console.debug(generatedName);
+
             cb(null, generatedName);
           },
         }),

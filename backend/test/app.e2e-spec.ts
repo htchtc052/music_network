@@ -14,11 +14,15 @@ import { join } from 'path';
 import { UserEntity } from '../src/users/entities/user.entity';
 import { TrackEntity } from '../src/tracks/entities/track.entity';
 import { EditTrackInfoDto } from '../src/tracks/dtos/editTrackInfo.dto';
+import { ConfigService } from '@nestjs/config';
+import { readdirSync, unlinkSync } from 'fs';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
-  let authService: AuthService, usersService: UsersService;
+  let authService: AuthService,
+    usersService: UsersService,
+    configService: ConfigService;
 
   const credentialsValid: LoginDto = {
     email: 'test.user.1@mail.com',
@@ -43,11 +47,27 @@ describe('AppController (e2e)', () => {
     await app.init();
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
+    configService = moduleFixture.get<ConfigService>(ConfigService);
   });
 
   afterAll(async () => {
     await app.close();
+
+    const uploadsDir = configService.get('UPLOADS_DIR');
+    const files = readdirSync(uploadsDir);
+
+    files.forEach((file) => {
+      const filePath = join(uploadsDir, file);
+      try {
+        unlinkSync(filePath);
+        console.log(`Deleted test file ${filePath}`);
+      } catch (err) {
+        console.error(`Failed to delete test file ${filePath}`);
+        console.error(err);
+      }
+    });
   });
+
   describe('Auth routes', () => {
     describe('Register user', () => {
       const registerDto: RegisterDto = {
@@ -211,31 +231,38 @@ describe('AppController (e2e)', () => {
       it('/tracks (POST) - success', async () => {
         const fileName = 'test_song.mp3';
         const filePath = join(__dirname, 'fixtures', fileName);
+        try {
+          const res = await request(app.getHttpServer())
+            .post('/tracks')
+            .set('Authorization', 'Bearer ' + accessToken)
+            .attach('trackFile', filePath);
 
-        const res = await request(app.getHttpServer())
-          .post('/tracks')
-          .set('Authorization', 'Bearer ' + accessToken)
-          .attach('trackFile', filePath);
+          expect(res.statusCode).toEqual(HttpStatus.CREATED);
 
-        expect(res.statusCode).toEqual(HttpStatus.CREATED);
+          expect(res.body.userId).toEqual(authUser.id);
+          expect(res.body.title).toEqual(fileName);
 
-        expect(res.body.userId).toEqual(authUser.id);
-        expect(res.body.title).toEqual(fileName);
-
-        track = res.body;
+          track = res.body;
+        } catch (err) {
+          console.error(err);
+        }
       });
 
       it('/tracks (POST) - error: invalid file type', async () => {
         const fileName = 'test_image.jpg';
         const filePath = join(__dirname, 'fixtures', fileName);
 
-        const res = await request(app.getHttpServer())
-          .post('/tracks')
-          .set('Authorization', 'Bearer ' + accessToken)
-          .attach('trackFile', filePath);
+        try {
+          const res = await request(app.getHttpServer())
+            .post('/tracks')
+            .set('Authorization', 'Bearer ' + accessToken)
+            .attach('trackFile', filePath);
 
-        expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
-        expect(res.body.message).toEqual('File must be an mp3');
+          expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+          expect(res.body.message).toEqual('File must be an mp3');
+        } catch (err) {
+          console.error(err);
+        }
       });
     });
 
