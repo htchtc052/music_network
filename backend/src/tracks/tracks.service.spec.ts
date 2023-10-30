@@ -49,6 +49,7 @@ describe('TracksService', () => {
     const result: TrackEntity = await tracksService.createTrack(
       userMock,
       uploadedTrackFileMock,
+      false,
     );
 
     expect(prisma.track.create).toHaveBeenCalledWith({

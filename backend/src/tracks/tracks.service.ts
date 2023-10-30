@@ -12,9 +12,14 @@ export class TracksService {
   async createTrack(
     user: User,
     uploadedTrackFile: Express.Multer.File,
+    isPrivate: boolean,
   ): Promise<TrackEntity> {
     const track: Track = await this.prisma.track.create({
-      data: { title: uploadedTrackFile.originalname, userId: user.id },
+      data: {
+        title: uploadedTrackFile.originalname,
+        userId: user.id,
+        private: isPrivate,
+      },
     });
 
     const file: TrackFile = await this.prisma.trackFile.create({

@@ -287,7 +287,6 @@ describe('AppController (e2e)', () => {
           editTrackInfoDto.hiddenDescription,
         );
       });
-
       it('/tracks/:id (GET) - success', async () => {
         const res = await request(app.getHttpServer())
           .get('/tracks/' + track.id)
@@ -298,6 +297,7 @@ describe('AppController (e2e)', () => {
         expect(typeof res.body.hiddenDescription).toBe('string');
       });
     });
+
 
     describe('Track route as guest. Not access to hidden description', () => {
       it('/tracks/:id (GET) - success', async () => {

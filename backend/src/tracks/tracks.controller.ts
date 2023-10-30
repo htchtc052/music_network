@@ -54,7 +54,7 @@ export class TracksController {
     @UploadedFile()
     uploadedTrackFile: Express.Multer.File,
   ): Promise<TrackEntity> {
-    return this.tracksService.createTrack(authUser, uploadedTrackFile);
+    return this.tracksService.createTrack(authUser, uploadedTrackFile, false);
   }
 
   @ApiOperation({ summary: 'Get track by id' })
