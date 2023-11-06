@@ -3,7 +3,6 @@ import { TestingModule } from '@nestjs/testing';
 import { appSetup } from './utils/app.setup';
 import * as request from 'supertest';
 import { mockRegisterDto } from './mocks/mockUserData';
-import { AuthResponse } from '../src/auth/responses/auth.response';
 import { setupTestEnviroment } from './utils/setupTestEnviroment';
 import { registerTestUser } from './utils/registerTestUser';
 import { deleteTestUser } from './utils/deleteTestUser';

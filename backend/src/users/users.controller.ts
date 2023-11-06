@@ -1,17 +1,13 @@
 import { Public } from '../auth/decorators/public.decorator';
-import {
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { TransformTrackInterceptor } from '../tracks/interceptors/transormTrack.interceptor';
 import { UserProfile } from './decorators/userProfile.decorator';
-import { Track, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { IsOwner } from './decorators/isOwner.decorator';
-import { UserEntity } from './entities/user.entity';
 import { TracksService } from '../tracks/tracks.service';
-import { UserResponse } from './responses/user.response';
+import { UserResponse } from './dtos/userResponse';
+import { SerializerInterceptor } from '../commons/serializerInterceptor';
+import { TrackResponse } from '../tracks/dtos/track.response';
 
 @Controller('users')
 export class UsersController {
@@ -19,9 +15,9 @@ export class UsersController {
 
   @Public()
   @Get(':id')
-  @UseInterceptors(ClassSerializerInterceptor)
+  @UseInterceptors(SerializerInterceptor)
   async getUserById(@UserProfile() userProfile: User): Promise<UserResponse> {
-    return { user: new UserEntity(userProfile) };
+    return new UserResponse(userProfile);
   }
 
   @Public()
@@ -30,12 +26,10 @@ export class UsersController {
   async getUserTracks(
     @UserProfile() userProfile: User,
     @IsOwner() isOwner: boolean,
-  ): Promise<Track[]> {
-    const tracks: Track[] = await this.tracksService.getTracksByUser(
-      userProfile,
-      isOwner,
-    );
+  ): Promise<TrackResponse[]> {
+    const tracksResponse: TrackResponse[] =
+      await this.tracksService.getTracksByUser(userProfile, isOwner);
 
-    return tracks;
+    return tracksResponse;
   }
 }

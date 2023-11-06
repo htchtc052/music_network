@@ -8,12 +8,12 @@ import { GetTrackMiddleware } from './middlewares/getTrack.middleware';
 import { TracksService } from './tracks.service';
 import { TracksController } from './tracks.controller';
 import { FilesModule } from '../files/files.module';
+import { TracksRepository } from './tracksRepository';
 
 @Module({
   imports: [FilesModule],
   controllers: [TracksController],
-
-  providers: [TracksService],
+  providers: [TracksService, TracksRepository],
 })
 export class TracksModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

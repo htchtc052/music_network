@@ -5,10 +5,8 @@ import { deleteTestTrack } from './utils/deleteTestTrack';
 import { deleteTestUser } from './utils/deleteTestUser';
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
-import { AuthResponse } from '../src/auth/responses/auth.response';
 import * as request from 'supertest';
 import { createTestTrack } from './utils/createTestTrack';
-import { TrackEntity } from '../src/tracks/entities/track.entity';
 
 describe('Get Track', () => {
   let app: INestApplication;
@@ -39,7 +37,7 @@ describe('Get Track', () => {
   it('/tracks/:id (GET) - success', async () => {
     const res = await request(app.getHttpServer())
       .get('/tracks/' + track.id)
-      .set('Authorization', 'Bearer ' + authResponse.tokens.accessToken);
+      .set('Authorization', 'Bearer ' + authResponse.accessToken);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body.id).toEqual(track.id);

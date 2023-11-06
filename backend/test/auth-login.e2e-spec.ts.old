@@ -1,6 +1,5 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AuthResponse } from '../src/auth/responses/auth.response';
 import { TestingModule } from '@nestjs/testing';
 import { setupTestEnviroment } from './utils/setupTestEnviroment';
 import { registerTestUser } from './utils/registerTestUser';
@@ -36,8 +35,8 @@ describe('Auth login', () => {
       .send({ email: mockUserData.email, password: mockUserData.password });
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
-    expect(typeof res.body.tokens.accessToken).toBe('string');
-    expect(typeof res.body.tokens.refreshToken).toBe('string');
+    expect(typeof res.body.accessToken).toBe('string');
+    expect(typeof res.body.refreshToken).toBe('string');
     expect(res.body.user).toBeDefined();
   });
 
@@ -65,10 +64,10 @@ describe('Auth login', () => {
     const res = await request(app.getHttpServer())
       .post('/auth/refreshTokens')
       .send({
-        refreshToken: authResponse.tokens.refreshToken,
+        refreshToken: authResponse.refreshToken,
       });
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
-    expect(res.body.tokens).toBeDefined();
+    expect(res.body.refreshToken).toBeDefined();
   });
 });

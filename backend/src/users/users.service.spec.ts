@@ -1,34 +1,37 @@
 import { UsersService } from './users.service';
 import { PrismaService } from 'nestjs-prisma';
 import { Test, TestingModule } from '@nestjs/testing';
-import { RegisterDto } from '../auth/dto/register.dto';
-import * as argon2 from 'argon2';
-import { mockUser } from './mocks/mockUser';
 import { User } from '@prisma/client';
-import { mockRegisterDto } from '../auth/mocks/mockRegisterDto';
-import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
-import { mockEditUserInfoDto } from '../account/mocks/mockEditUserInfo.dto';
+import { RegisterDto } from '../auth/dto/register.dto';
+import { userMock } from './mocks/users.mocks';
+import { editUserInfoDtoMock } from '../account/mocks/account.mocks';
+import { UsersRepository } from './users.repository';
+import { TrackResponse } from '../tracks/dtos/track.response';
+import { UserResponse } from './dtos/userResponse';
 
 describe('UsersService', () => {
   let usersService: UsersService;
-  let prisma: PrismaService;
 
-  const userMock: User = mockUser();
-  const registerDtoMock: RegisterDto = mockRegisterDto();
-  const editUserInfoDtoMock: EditUserInfoDto = mockEditUserInfoDto();
-  let hashedPassword: string;
+  let mockUsersRepository = {
+    createUser: jest.fn(),
+    getUserById: jest.fn(),
+    getUserByEmail: jest.fn(),
+    updateUser: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, PrismaService],
+      providers: [
+        UsersService,
+        PrismaService,
+        {
+          provide: UsersRepository,
+          useValue: mockUsersRepository,
+        },
+      ],
     }).compile();
 
     usersService = module.get<UsersService>(UsersService);
-    prisma = module.get<PrismaService>(PrismaService);
-
-    hashedPassword = await argon2.hash(registerDtoMock.password);
-
-    jest.spyOn(usersService, 'hashPassword').mockResolvedValue(hashedPassword);
   });
 
   it('should be defined', () => {
@@ -36,63 +39,65 @@ describe('UsersService', () => {
   });
 
   it('should create a new user', async () => {
-    prisma.user.create = jest.fn().mockResolvedValue({
-      username: registerDtoMock.username,
-      email: registerDtoMock.email,
-      password: hashedPassword,
-    } as User);
+    jest.spyOn(mockUsersRepository, 'createUser').mockResolvedValue(userMock);
 
-    const result: User = await usersService.createUser(registerDtoMock);
+    jest
+      .spyOn(usersService, 'hashPassword')
+      .mockResolvedValue(userMock.password);
 
-    expect(result.username).toEqual(userMock.username);
-    expect(result.password).toEqual(hashedPassword);
-  });
+    jest.spyOn(mockUsersRepository, 'createUser').mockResolvedValue(userMock);
 
-  it('should update user info', async () => {
-    prisma.user.update = jest.fn().mockResolvedValue({
-      firstName: editUserInfoDtoMock.firstName,
-      lastName: editUserInfoDtoMock.lastName,
-    } as User);
+    const user: User = await usersService.createUser({
+      username: userMock.username,
+      email: userMock.email,
+      password: userMock.password,
+    } as RegisterDto);
 
-    const result: User = await usersService.editInfo(
-      userMock,
-      editUserInfoDtoMock,
-    );
-
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: userMock.id },
-      data: editUserInfoDtoMock,
-    });
-
-    expect(result.firstName).toEqual(editUserInfoDtoMock.firstName);
-    expect(result.lastName).toEqual(editUserInfoDtoMock.lastName);
+    expect(user).toEqual(userMock);
   });
 
   it('should find user by id', async () => {
-    prisma.user.findUnique = jest.fn().mockResolvedValue(userMock);
+    jest.spyOn(mockUsersRepository, 'getUserById').mockResolvedValue(userMock);
 
-    const result: User = await usersService.findById(userMock.id);
+    const user: User = await usersService.getUserById(userMock.id);
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: {
-        id: userMock.id,
-      },
-    });
-
-    expect(result).toEqual(userMock);
+    expect(user).toEqual(user);
   });
 
-  it('should find user by email', async () => {
-    prisma.user.findUnique = jest.fn().mockResolvedValue(userMock);
+  describe('editUserInfo', () => {
+    it('Should update user info', async () => {
+      const editedUserMock: User = {
+        ...userMock,
+        ...editUserInfoDtoMock,
+      } as User;
 
-    const result: User = await usersService.findByEmail(userMock.email);
+      jest
+        .spyOn(mockUsersRepository, 'updateUser')
+        .mockResolvedValue(editedUserMock);
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: {
-        email: userMock.email,
-      },
+      const editedUserResponse: UserResponse = await usersService.editUserInfo(
+        userMock,
+        editUserInfoDtoMock,
+      );
+
+      expect(editedUserResponse).toEqual(new TrackResponse(editedUserMock));
     });
+  });
 
-    expect(result).toEqual(userMock);
+  describe('deleteUser', () => {
+    it('should mark user as deleted', async () => {
+      const deletedUserMock: User = {
+        ...userMock,
+        deletedAt: new Date(),
+      } as User;
+
+      jest
+        .spyOn(mockUsersRepository, 'updateUser')
+        .mockResolvedValue(deletedUserMock);
+
+      const deletedUser: User = await usersService.deleteUser(userMock);
+
+      expect(deletedUser).toEqual(deletedUserMock);
+    });
   });
 });

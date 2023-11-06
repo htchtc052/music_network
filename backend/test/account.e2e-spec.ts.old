@@ -3,7 +3,6 @@ import { TestingModule } from '@nestjs/testing';
 import { appSetup } from './utils/app.setup';
 import * as request from 'supertest';
 import { EditUserInfoDto } from '../src/account/dtos/editUserInfo.dto';
-import { AuthResponse } from '../src/auth/responses/auth.response';
 import { setupTestEnviroment } from './utils/setupTestEnviroment';
 import { mockRegisterDto } from './mocks/mockUserData';
 import { registerTestUser } from './utils/registerTestUser';
@@ -33,7 +32,7 @@ describe('Account routes', () => {
   it('/auth/me (Get) - success', async () => {
     const res = await request(app.getHttpServer())
       .get('/account/me')
-      .set('Authorization', 'Bearer ' + authResponse.tokens.accessToken);
+      .set('Authorization', 'Bearer ' + authResponse.accessToken);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body.user).toBeDefined();
@@ -48,7 +47,7 @@ describe('Account routes', () => {
 
     const res = await request(app.getHttpServer())
       .put('/account/editInfo')
-      .set('Authorization', 'Bearer ' + authResponse.tokens.accessToken)
+      .set('Authorization', 'Bearer ' + authResponse.accessToken)
       .send(editUserInfoDto);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);

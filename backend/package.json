@@ -18,7 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "migrate:testdb": "dotenv -e .env.test -- npx prisma migrate deploy",
+    "migrate:test": "dotenv -e .env.test -- npx prisma migrate deploy",
     "test:e2e": "dotenv -e .env.test -- npx prisma migrate reset --force && dotenv -e .env.test -- jest --config ./test/jest-e2e.json",
     "prisma:studio": "npx prisma studio",
     "prisma:studio:test": "dotenv -e .env.test -- npx prisma studio",

@@ -1,43 +1,45 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from 'nestjs-prisma';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Token, User } from '@prisma/client';
-import { TokensResponse } from '../auth/responses/tokens.response';
+import { User } from '@prisma/client';
 import { JwtTokenDecoded } from './types/JwtPayload.type';
 import { v4 as uuidv4 } from 'uuid';
+import { TokensResponse } from './dtos/tokensResponse';
+import { TokensRepository } from './tokens.repository';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class TokensService {
   constructor(
-    private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private tokensRepository: TokensRepository,
+    private usersRepository: UsersRepository,
   ) {}
 
-  async getUserByRefreshToken(refreshToken: string): Promise<User> {
-    const user: User = await this.prisma.user.findFirst({
-      where: {
-        Token: {
-          some: {
-            refreshToken,
-          },
-        },
-      },
-      include: {
-        Token: true,
-      },
+  async saveRefreshToken(user: User, refreshToken: string): Promise<void> {
+    const refreshTokenDecoded: JwtTokenDecoded = this.jwtService.decode(
+      refreshToken,
+    ) as JwtTokenDecoded | null;
+    await this.tokensRepository.createToken({
+      userId: user.id,
+      refreshToken,
+      expiresAt: new Date(refreshTokenDecoded.iat * 1000),
+      createdAt: new Date(refreshTokenDecoded.exp * 1000),
     });
+  }
 
-    return user;
+  getUserByRefreshToken(refreshToken: string): Promise<User> {
+    return this.usersRepository.getUserByRefreshToken(refreshToken);
   }
 
   async deleteToken(refreshToken: string) {
-    await this.prisma.token.delete({ where: { refreshToken } });
+    await this.tokensRepository.deleteByRefreshToken(refreshToken);
   }
 
   async decodeRefreshToken(refreshToken: string): Promise<JwtTokenDecoded> {
     let tokenPayload: JwtTokenDecoded;
+
     try {
       tokenPayload = await this.jwtService.verifyAsync(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -55,24 +57,10 @@ export class TokensService {
     const refreshToken = await this.signRefreshToken(user);
 
     await this.saveRefreshToken(user, refreshToken);
-    return { tokens: { accessToken, refreshToken } };
+    return { accessToken, refreshToken };
   }
 
-  async saveRefreshToken(user: User, refreshToken: string): Promise<Token> {
-    const refreshTokenDecoded: JwtTokenDecoded = this.jwtService.decode(
-      refreshToken,
-    ) as JwtTokenDecoded | null;
-    return this.prisma.token.create({
-      data: {
-        user: { connect: { id: user.id } },
-        refreshToken,
-        expiresAt: new Date(refreshTokenDecoded.iat * 1000),
-        createdAt: new Date(refreshTokenDecoded.exp * 1000),
-      },
-    });
-  }
-
-  private async signAccessToken(user: User): Promise<string> {
+  async signAccessToken(user: User): Promise<string> {
     return this.jwtService.signAsync(
       { sid: uuidv4() },
       {
@@ -83,7 +71,7 @@ export class TokensService {
     );
   }
 
-  private async signRefreshToken(user: User): Promise<string> {
+  async signRefreshToken(user: User): Promise<string> {
     return this.jwtService.signAsync(
       { sid: uuidv4() },
       {

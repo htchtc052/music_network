@@ -5,21 +5,26 @@ import { TracksService } from './tracks.service';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { AbilityFactory } from '../casl/ability.factory';
 import { ConfigService } from '@nestjs/config';
-import { mockUploadedTrackFile } from '../files/mocks/mockUploadedTrackFile';
-import { Track, TrackFile, User } from '@prisma/client';
-import { TrackEntity } from './entities/track.entity';
-import { mockUser } from '../users/mocks/mockUser';
-import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
-import { mockEditTrackInfoDto } from './mocks/mockEditTrackInfoDto';
-import { mockTrack } from './tracks/mockTrack';
+import { Track, TrackFile } from '@prisma/client';
+import {
+  editTrackInfoDtoMock,
+  trackWithFileMock,
+  uploadedTrackFileMock,
+} from './mocks/tracks.mocks';
+import { userMock } from '../users/mocks/users.mocks';
+import { TrackResponse } from './dtos/track.response';
+import { TrackWithFile } from './types/track.types';
 
 describe('TracksController', () => {
   let app: INestApplication;
   let tracksController: TracksController;
 
   const mockTracksService = {
+    createTrackByUploadedFile: jest.fn(),
     createTrack: jest.fn(),
-    editInfo: jest.fn(),
+    createTrackFile: jest.fn(),
+    findWithFileById: jest.fn(),
+    editTrackInfo: jest.fn(),
     deleteTrack: jest.fn(),
   };
 
@@ -47,79 +52,68 @@ describe('TracksController', () => {
   });
 
   it('should create a new track', async () => {
-    const uploadedTrackFileMock: Express.Multer.File = mockUploadedTrackFile();
-
-    const userMock: User = mockUser();
-
-    const mockCreatedTrack: TrackEntity = {
-      createdAt: new Date(),
-      deletedAt: null,
-      description: '',
+    const trackResultMock: TrackWithFile = {
+      id: 1,
+      userId: userMock.id,
+      title: uploadedTrackFileMock.originalname,
       file: {
+        trackId: 1,
         fileSize: uploadedTrackFileMock.size,
         filePath: uploadedTrackFileMock.path,
         mimetype: uploadedTrackFileMock.mimetype,
-        trackId: 1,
       } as TrackFile,
-      hiddenDescription: '',
-      keywords: [],
-      private: false,
-      updatedAt: null,
-      userId: userMock.id,
-      title: uploadedTrackFileMock.originalname,
-      id: 1,
-    };
+    } as TrackWithFile;
 
     jest
-      .spyOn(mockTracksService, 'createTrack')
-      .mockResolvedValue(mockCreatedTrack);
+      .spyOn(mockTracksService, 'createTrackByUploadedFile')
+      .mockResolvedValue(trackResultMock);
 
-    const createdTrack: TrackEntity = await tracksController.createTrack(
+    const track: TrackResponse = await tracksController.createTrack(
       userMock,
       uploadedTrackFileMock,
     );
 
-    expect(mockTracksService.createTrack).toHaveBeenCalledWith(
-      userMock,
-      uploadedTrackFileMock,
-    );
+    expect(track).toEqual(trackResultMock);
+  });
 
-    expect(createdTrack.userId).toEqual(userMock.id);
-    expect(createdTrack.title).toEqual(uploadedTrackFileMock.originalname);
-    expect(createdTrack.file.filePath).toEqual(uploadedTrackFileMock.path);
+  it('should get track by id', async () => {
+    const track: TrackResponse = tracksController.getTrack(trackWithFileMock);
+
+    expect(track).toEqual(trackWithFileMock);
   });
 
   it('Should edit track info', async () => {
-    const editTrackInfoDtoMock: EditTrackInfoDto = mockEditTrackInfoDto();
-    const trackMock: Track = mockTrack();
-
-    const updatedTrackMock: Track = { ...trackMock, ...editTrackInfoDtoMock };
+    const editedTrackMock: TrackResponse = {
+      ...trackWithFileMock,
+      ...editTrackInfoDtoMock,
+    } as TrackResponse;
 
     jest
-      .spyOn(mockTracksService, 'editInfo')
-      .mockResolvedValue(updatedTrackMock);
+      .spyOn(mockTracksService, 'editTrackInfo')
+      .mockResolvedValue(editedTrackMock);
 
-    const editedTrack: Track = await tracksController.editInfo(
-      trackMock,
+    const editedTrack: TrackResponse = await tracksController.editInfo(
+      trackWithFileMock,
       editTrackInfoDtoMock,
     );
 
-    expect(mockTracksService.editInfo).toHaveBeenCalledWith(
-      trackMock,
-      editTrackInfoDtoMock,
-    );
-
-    expect(editedTrack).toEqual(updatedTrackMock);
+    expect(editedTrack).toEqual(editedTrackMock);
   });
 
   it('should delete a track', async () => {
-    const trackMock: Track = mockTrack();
+    const deletedTrackMock: Track = {
+      ...trackWithFileMock,
+      deletedAt: new Date(),
+    } as Track;
 
-    jest.spyOn(mockTracksService, 'deleteTrack').mockResolvedValue(trackMock);
+    jest
+      .spyOn(mockTracksService, 'deleteTrack')
+      .mockResolvedValue(deletedTrackMock);
 
-    const result: string = await tracksController.deleteTrack(trackMock);
+    const result: string = await tracksController.deleteTrack(
+      trackWithFileMock,
+    );
 
-    expect(mockTracksService.deleteTrack).toHaveBeenCalledWith(trackMock);
-    expect(result).toEqual(`Track ${trackMock.id} successfully deleted`);
+    expect(result).toEqual(`Track ${deletedTrackMock.id} successfully deleted`);
   });
 });

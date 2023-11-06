@@ -7,18 +7,20 @@ import {
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
 import { User } from '@prisma/client';
-import { AuthResponse } from './responses/auth.response';
-import { UserEntity } from '../users/entities/user.entity';
-import { TokensResponse } from './responses/tokens.response';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtTokenDecoded } from '../tokens/types/JwtPayload.type';
 import { TokensService } from '../tokens/tokens.service';
 
+import { AuthResponse } from './dto/authResponse';
+import { TokensResponse } from '../tokens/dtos/tokensResponse';
+import { UsersRepository } from '../users/users.repository';
+
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
+    private usersRepository: UsersRepository,
     private tokensService: TokensService,
   ) {}
 
@@ -26,26 +28,26 @@ export class AuthService {
     const user: User = await this.usersService.createUser(registerDto);
 
     const tokens = await this.tokensService.generateAndSaveTokens(user);
-    return {
-      user: new UserEntity(user),
+
+    return new AuthResponse({
       ...tokens,
-    };
+      ...user,
+    });
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const user: User = await this.usersService.findByEmail(loginDto.email);
-
-    if (!user) throw new BadRequestException('User does not exist');
+    const user: User = await this.usersService.getUserByEmail(loginDto.email);
 
     if (!(await this.validatePassword(user.password, loginDto.password)))
       throw new BadRequestException('Password is incorrect');
 
-    const tokens: TokensResponse =
+    const tokensResponse: TokensResponse =
       await this.tokensService.generateAndSaveTokens(user);
-    return {
-      user: new UserEntity(user),
-      ...tokens,
-    };
+
+    return new AuthResponse({
+      ...tokensResponse,
+      ...user,
+    });
   }
 
   async validatePassword(

@@ -2,10 +2,10 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { TracksService } from '../tracks/tracks.service';
-import { Track, User } from '@prisma/client';
-import { mockTracks } from '../tracks/mocks/mockTracks';
-import { mockUser } from './mocks/mockUser';
-import { UserResponse } from './responses/user.response';
+import { UserResponse } from './dtos/userResponse';
+import { userMock } from './mocks/users.mocks';
+import { trackWithFileMock } from '../tracks/mocks/tracks.mocks';
+import { TrackResponse } from '../tracks/dtos/track.response';
 
 describe('UserController', () => {
   let app: INestApplication;
@@ -36,36 +36,24 @@ describe('UserController', () => {
   });
 
   describe('Users routes', () => {
-    const userProfileMock: User = mockUser();
-
     it('should return user profile', async () => {
-      const result: UserResponse = await usersController.getUserById(
-        userProfileMock,
-      );
+      const user: UserResponse = await usersController.getUserById(userMock);
 
-      expect(result.user).toEqual(userProfileMock);
+      expect(user).toEqual(user);
     });
 
     it('should return user tracks', async () => {
-      const tracksMock = mockTracks();
-
+      const tracksResponseMock: [TrackResponse] = [trackWithFileMock];
       jest
         .spyOn(mockTracksService, 'getTracksByUser')
-        .mockResolvedValue(tracksMock);
+        .mockResolvedValue(tracksResponseMock);
 
       const isOwner = true;
 
-      const result: Track[] = await usersController.getUserTracks(
-        userProfileMock,
-        isOwner,
-      );
+      const tracksResponse: TrackResponse[] =
+        await usersController.getUserTracks(userMock, isOwner);
 
-      expect(mockTracksService.getTracksByUser).toHaveBeenCalledWith(
-        userProfileMock,
-        true,
-      );
-
-      expect(result).toEqual(tracksMock);
+      expect(tracksResponse).toEqual(tracksResponseMock);
     });
   });
 });

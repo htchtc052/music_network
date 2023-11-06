@@ -9,6 +9,7 @@ import { classToPlain } from 'class-transformer';
 import { Action, AppAbility } from '../../casl/ability.factory';
 import { subject } from '@casl/ability';
 import { RequestWithAuthUser } from '../../users/types/requestsWithUsers.type';
+import { SerializerInterceptor } from '../../commons/serializerInterceptor';
 
 export interface Response<T> {
   data: T;
@@ -16,6 +17,7 @@ export interface Response<T> {
 
 @Injectable()
 export class TransformTrackInterceptor<T>
+  extends SerializerInterceptor
   implements NestInterceptor<T, Response<T>>
 {
   intercept(

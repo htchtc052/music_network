@@ -1,7 +1,7 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -11,11 +11,15 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { AuthResponse } from './responses/auth.response';
-import { TokensResponse } from './responses/tokens.response';
 import { Public } from './decorators/public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthUser } from './decorators/authUser.decorator';
+import { User } from '@prisma/client';
+import { AuthResponse } from './dto/authResponse';
+import { UserResponse } from '../users/dtos/userResponse';
+import { SerializerInterceptor } from '../commons/serializerInterceptor';
+import { TokensResponse } from '../tokens/dtos/tokensResponse';
 
 @Controller('auth')
 //@UseGuards(JwtAuthGuard)
@@ -26,7 +30,7 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
-  @UseInterceptors(ClassSerializerInterceptor)
+  @UseInterceptors(SerializerInterceptor)
   register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
     return this.authService.register(registerDto);
   }
@@ -36,7 +40,7 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  @UseInterceptors(ClassSerializerInterceptor)
+  @UseInterceptors(SerializerInterceptor)
   login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(loginDto);
   }
@@ -48,5 +52,13 @@ export class AuthController {
   refreshTokens(@Req() req: Request): Promise<TokensResponse> {
     const refreshToken: string = req.body['refreshToken'];
     return this.authService.refreshTokens(refreshToken);
+  }
+
+  @ApiOperation({ summary: 'Get own user' })
+  @HttpCode(HttpStatus.OK)
+  @Get('/me')
+  @UseInterceptors(SerializerInterceptor)
+  async getUser(@AuthUser() authUser: User): Promise<UserResponse> {
+    return new UserResponse(authUser);
   }
 }

@@ -1,8 +1,8 @@
-import { Exclude, Expose } from 'class-transformer';
+import { Genders } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { Genders, User } from '@prisma/client';
+import { Exclude, Expose } from 'class-transformer';
 
-export class UserEntity implements User {
+export class UserResponse {
   @ApiProperty({ required: true })
   @Expose()
   id: number;
@@ -17,35 +17,24 @@ export class UserEntity implements User {
 
   @ApiProperty()
   @Expose()
-  firstName: string;
+  firstName?: string;
 
   @ApiProperty()
   @Expose()
-  lastName: string;
+  lastName?: string;
 
   @ApiProperty()
   @Expose()
-  gender: Genders;
+  gender?: Genders;
 
-  @Exclude()
-  activationToken: string;
-
-  @Exclude()
-  ativatedAt: Date | null;
-
+  @ApiProperty()
   @Expose()
   createdAt: Date;
-
-  @Expose()
-  updatedAt: Date;
-
-  @Exclude()
-  isAdmin: boolean;
 
   @Exclude()
   password: string;
 
-  constructor(partial?: Partial<UserEntity>) {
+  constructor(partial?: Partial<UserResponse>) {
     Object.assign(this, partial);
   }
 }

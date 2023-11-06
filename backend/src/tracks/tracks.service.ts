@@ -1,101 +1,82 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'nestjs-prisma';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Track, TrackFile, User } from '@prisma/client';
-import { TrackEntity } from './entities/track.entity';
 import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
+import { TrackResponse } from './dtos/track.response';
+import { TracksRepository } from './tracksRepository';
+import { TrackWhereFilter, TrackWithFile } from './types/track.types';
 
-@Injectable()
 @Injectable()
 export class TracksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private tracksRepository: TracksRepository) {}
 
-  async createTrack(
+  async createTrackByUploadedFile(
     user: User,
-    uploadedTrackFile: Express.Multer.File,
-    isPrivate: boolean,
-  ): Promise<TrackEntity> {
-    const track: Track = await this.prisma.track.create({
-      data: {
-        title: uploadedTrackFile.originalname,
-        userId: user.id,
-        private: isPrivate,
-      },
+    uploadedFile: Express.Multer.File,
+  ): Promise<TrackResponse> {
+    const track: Track = await this.tracksRepository.createTrack({
+      title: uploadedFile.originalname,
+      userId: user.id,
     });
 
-    const file: TrackFile = await this.prisma.trackFile.create({
-      data: {
-        fileSize: uploadedTrackFile.size,
-        filePath: uploadedTrackFile.path,
-        mimetype: uploadedTrackFile.mimetype,
-        trackId: track.id,
-      },
+    const trackFile: TrackFile = await this.tracksRepository.createTrackFile({
+      fileSize: uploadedFile.size,
+      filePath: uploadedFile.path,
+      mimetype: uploadedFile.mimetype,
+      trackId: track.id,
     });
-
-    return { ...track, file };
+    return new TrackResponse({ ...track, file: trackFile });
   }
 
-  async editInfo(
-    track: Track,
-    editTrackInfoDto: EditTrackInfoDto,
-  ): Promise<Track> {
-    const updatedTrack: Track = await this.prisma.track.update({
-      where: { id: track.id },
-      data: {
-        title: editTrackInfoDto.title,
-        description: editTrackInfoDto.description,
-        hiddenDescription: editTrackInfoDto.hiddenDescription,
-        private: editTrackInfoDto.private,
-      },
-      include: {
-        file: true,
-      },
-    });
+  async getTrackById(trackId: number): Promise<TrackWithFile> {
+    const track: TrackWithFile = await this.tracksRepository.getTrackById(
+      trackId,
+    );
 
-    return updatedTrack;
-  }
-
-  async deleteTrack(track: Track): Promise<Track> {
-    const deletedTrack = await this.prisma.track.update({
-      where: { id: track.id },
-      data: {
-        deletedAt: new Date(),
-      },
-    });
-    return deletedTrack;
-  }
-
-  async findWithFileById(id: number): Promise<Track> {
-    const track: Track = await this.prisma.track.findUnique({
-      where: {
-        id,
-        deletedAt: null,
-      },
-      include: {
-        file: true,
-      },
-    });
+    if (!track) {
+      throw new NotFoundException('Track not found');
+    }
 
     return track;
   }
 
-  async getTracksByUser(user: User, readAsOwner: boolean): Promise<Track[]> {
-    const where: { userId: number; private?: boolean; deletedAt: Date | null } =
-      {
-        userId: user.id,
-        deletedAt: null,
-      };
+  async editTrackInfo(
+    track: Track,
+    editTrackInfoDto: EditTrackInfoDto,
+  ): Promise<TrackResponse> {
+    const updatedTrack: TrackWithFile = await this.tracksRepository.updateTrack(
+      track.id,
+      editTrackInfoDto,
+    );
+
+    return new TrackResponse(updatedTrack);
+  }
+
+  async getTracksByUser(
+    user: User,
+    readAsOwner: boolean,
+  ): Promise<TrackResponse[]> {
+    const where: TrackWhereFilter = {
+      userId: user.id,
+      deletedAt: null,
+    };
 
     if (!readAsOwner) {
       where.private = false;
     }
+    const tracks: TrackWithFile[] =
+      await this.tracksRepository.getTracksByCriteria(where);
 
-    const tracks: Track[] = await this.prisma.track.findMany({
-      where,
-      include: {
-        file: true,
+    return tracks.map((track: TrackWithFile) => new TrackResponse(track));
+  }
+
+  async deleteTrack(track: Track): Promise<Track> {
+    const deletedTrack: Track = (await this.tracksRepository.updateTrack(
+      track.id,
+      {
+        deletedAt: new Date(),
       },
-    });
+    )) as Track;
 
-    return tracks;
+    return deletedTrack;
   }
 }

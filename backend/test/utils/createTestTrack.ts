@@ -12,5 +12,9 @@ export const createTestTrack = async (
   const trackService: TracksService =
     moduleFixture.get<TracksService>(TracksService);
   const uploadedTrackFileMock: Express.Multer.File = mockTrackFile();
-  return trackService.createTrack(user, uploadedTrackFileMock, isPrivate);
+  return trackService.createTrackByUploadedFile(
+    user,
+    uploadedTrackFileMock,
+    isPrivate,
+  );
 };

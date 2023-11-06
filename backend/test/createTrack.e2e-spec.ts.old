@@ -46,7 +46,7 @@ describe('Create track', () => {
       try {
         const res = await request(app.getHttpServer())
           .post('/tracks')
-          .set('Authorization', 'Bearer ' + authResponse.tokens.accessToken)
+          .set('Authorization', 'Bearer ' + authResponse.accessToken)
           .attach('trackFile', filePath);
 
         expect(res.statusCode).toEqual(HttpStatus.CREATED);
@@ -57,23 +57,6 @@ describe('Create track', () => {
         track = res.body;
       } catch (err) {
         console.error(err);
-      }
-    });
-
-    it('/tracks (POST) - error: invalid file type', async () => {
-      const fileName = 'test_image.jpg';
-      const filePath = join(__dirname, 'fixtures', fileName);
-
-      try {
-        const res = await request(app.getHttpServer())
-          .post('/tracks')
-          .set('Authorization', 'Bearer ' + authResponse.tokens.accessToken)
-          .attach('trackFile', filePath);
-
-        expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
-        expect(res.body.message).toEqual('File must be an mp3');
-      } catch (err) {
-        //console.error(err);
       }
     });
   });

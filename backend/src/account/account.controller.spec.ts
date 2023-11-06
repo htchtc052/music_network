@@ -2,18 +2,18 @@ import { INestApplication } from '@nestjs/common';
 import { AccountController } from './account.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '../users/users.service';
-import { mockEditUserInfoDto } from './mocks/mockEditUserInfo.dto';
-import { EditUserInfoDto } from './dtos/editUserInfo.dto';
+import { UserResponse } from '../users/dtos/userResponse';
+import { userMock } from '../users/mocks/users.mocks';
+import { editUserInfoDtoMock } from './mocks/account.mocks';
 import { User } from '@prisma/client';
-import { mockUser } from '../users/mocks/mockUser';
-import { UserResponse } from '../users/responses/user.response';
 
 describe('AccountController', () => {
   let app: INestApplication;
   let accountController: AccountController;
 
   const mockUsersService = {
-    editInfo: jest.fn(),
+    editUserInfo: jest.fn(),
+    deleteUser: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -24,9 +24,6 @@ describe('AccountController', () => {
           provide: UsersService,
           useValue: mockUsersService,
         },
-        // { provide: PoliciesGuard, useValue: {} },
-        // { provide: AbilityFactory, useValue: {} },
-        //{ provide: ConfigService, useValue: {} },
       ],
       controllers: [AccountController],
     }).compile();
@@ -40,36 +37,35 @@ describe('AccountController', () => {
   });
 
   describe('Account routes', () => {
-    const authUserMock: User = mockUser();
-
-    it('should return user profile', async () => {
-      const result: UserResponse = await accountController.getUser(
-        authUserMock,
-      );
-
-      expect(result.user).toEqual(authUserMock);
-    });
-
     it('Should edit user info', async () => {
-      const editUserInfoDtoMock: EditUserInfoDto = mockEditUserInfoDto();
-
-      const updatedUserMock: User = { ...authUserMock, ...editUserInfoDtoMock };
+      const editedUserResponseMock: UserResponse = {
+        ...userMock,
+        ...editUserInfoDtoMock,
+      } as UserResponse;
 
       jest
-        .spyOn(mockUsersService, 'editInfo')
-        .mockResolvedValue(updatedUserMock);
+        .spyOn(mockUsersService, 'editUserInfo')
+        .mockResolvedValue(editedUserResponseMock);
 
-      const result: UserResponse = await accountController.editInfo(
-        authUserMock,
-        editUserInfoDtoMock,
-      );
+      const editedUserResponse: UserResponse =
+        await accountController.editUserInfo(userMock, editUserInfoDtoMock);
 
-      expect(mockUsersService.editInfo).toHaveBeenCalledWith(
-        authUserMock,
-        editUserInfoDtoMock,
-      );
+      expect(editedUserResponse).toEqual(editedUserResponseMock);
+    });
 
-      expect(result.user).toEqual(updatedUserMock);
+    it('should delete a user', async () => {
+      const deletedUserMock: User = {
+        ...userMock,
+        deletedAt: new Date(),
+      } as User;
+
+      jest
+        .spyOn(mockUsersService, 'deleteUser')
+        .mockResolvedValue(deletedUserMock);
+
+      const result: string = await accountController.deleteUser(userMock);
+
+      expect(result).toEqual(`User ${deletedUserMock.id} successfully deleted`);
     });
   });
 });

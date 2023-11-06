@@ -1,29 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'nestjs-prisma';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { v4 as uuid } from 'uuid';
 import * as argon2 from 'argon2';
 import { User } from '@prisma/client';
 import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
+import { UsersRepository } from './users.repository';
+import { UserResponse } from './dtos/userResponse';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private prisma: PrismaService, //  private emailService: EmailService,
-  ) {}
+  constructor(private usersRepository: UsersRepository) {}
 
   async createUser(registerDto: RegisterDto): Promise<User> {
     const hashedPassword = await this.hashPassword(registerDto.password);
 
     const activationToken: string = uuid();
-    const user: User = await this.prisma.user.create({
-      data: {
-        password: hashedPassword,
-        email: registerDto.email,
-        username: registerDto.username,
-        activationToken,
-      },
+    const user: User = await this.usersRepository.createUser({
+      password: hashedPassword,
+      email: registerDto.email,
+      username: registerDto.username,
+      activationToken,
     });
 
     return user;
@@ -33,37 +30,47 @@ export class UsersService {
     return argon2.hash(password);
   }
 
-  editInfo(user: User, editUserInfoDto: EditUserInfoDto): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: editUserInfoDto,
-    });
+  async getUserById(userId: number): Promise<User> {
+    const user: User = await this.usersRepository.getUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
-  findById(id: number): Promise<User> {
-    return this.prisma.user.findUnique({
-      where: {
-        id,
-      },
-    });
+  async getUserByEmail(email: string): Promise<User> {
+    const user: User = await this.usersRepository.getUserByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
-  findByEmail(email: string): Promise<User> {
-    return this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+  async checkEmailExists(email: string): Promise<boolean> {
+    return !(await this.usersRepository.getUsersCountByEmail(email));
   }
 
-  async checkFieldBusy(
-    fieldName: string,
-    fieldValue: string,
-  ): Promise<boolean> {
-    return !(await this.prisma.user.count({
-      where: {
-        [fieldName]: fieldValue,
-      },
-    }));
+  async editUserInfo(
+    user: User,
+    editUserInfoDto: EditUserInfoDto,
+  ): Promise<UserResponse> {
+    const updatedUser: User = await this.usersRepository.updateUser(
+      user.id,
+      editUserInfoDto,
+    );
+
+    return new UserResponse(updatedUser);
+  }
+
+  async deleteUser(user: User): Promise<User> {
+    const deletedUser: User = (await this.usersRepository.updateUser(user.id, {
+      deletedAt: new Date(),
+    })) as User;
+
+    return deletedUser;
   }
 }

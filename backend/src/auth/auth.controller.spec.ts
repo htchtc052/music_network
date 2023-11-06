@@ -2,12 +2,10 @@ import { BadRequestException, INestApplication } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { UserEntity } from '../users/entities/user.entity';
-import { AuthResponse } from './responses/auth.response';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { mockUserEntity } from '../users/mocks/mockUserEntity';
-import { mockTokensResponse } from './mocks/mockTokensResponse';
+import { AuthResponse } from './dto/authResponse';
+import { userMock } from '../users/mocks/users.mocks';
+import { tokensResponse } from '../tokens/mocks/tokens.mocks';
 
 describe('AuthController', () => {
   let app: INestApplication;
@@ -16,7 +14,6 @@ describe('AuthController', () => {
     register: jest.fn(),
     login: jest.fn(),
   };
-  //const mockJwtAuthGuard = jest.fn();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,70 +35,53 @@ describe('AuthController', () => {
     expect(authController).toBeDefined();
   });
 
-  describe('Auth routes', () => {
-    const mockAuthUser: UserEntity = mockUserEntity();
+  const authResponseMock = {
+    ...userMock,
+    ...tokensResponse,
+  } as AuthResponse;
 
-    const tokens = mockTokensResponse();
-    const mockAuthResponse: AuthResponse = {
-      ...tokens,
-      user: mockAuthUser,
-    };
+  it('should register user', async () => {
+    jest.spyOn(mockAuthService, 'register').mockResolvedValue(authResponseMock);
 
-    it('should register user', async () => {
-      const registerDto: RegisterDto = {
-        username: mockAuthUser.username,
-        email: mockAuthUser.email,
-        password: mockAuthUser.password,
-      };
-
-      jest
-        .spyOn(mockAuthService, 'register')
-        .mockResolvedValue(mockAuthResponse);
-
-      const authResponse: AuthResponse = await authController.register(
-        registerDto,
-      );
-
-      expect(mockAuthService.register).toBeCalledWith(registerDto);
-      expect(authResponse).toBe(mockAuthResponse);
+    const authResponse: AuthResponse = await authController.register({
+      username: userMock.username,
+      email: userMock.email,
+      password: userMock.password,
     });
 
-    describe('login routes', () => {
-      jest
-        .spyOn(mockAuthService, 'login')
-        .mockImplementation((loginDto: LoginDto) => {
-          if (
-            loginDto.email == mockAuthUser.email &&
-            loginDto.password == mockAuthUser.password
-          ) {
-            return mockAuthResponse;
-          } else {
-            throw new BadRequestException('');
-          }
-        });
+    expect(authResponse).toEqual(authResponseMock);
+  });
 
-      it('should login user with valid credentials', async () => {
-        const loginDto: LoginDto = {
-          email: mockAuthUser.email,
-          password: mockAuthUser.password,
-        };
-
-        const authResponse: AuthResponse = await authController.login(loginDto);
-
-        expect(mockAuthService.login).toBeCalledWith(loginDto);
-        expect(authResponse).toBe(mockAuthResponse);
+  describe('login routes', () => {
+    jest
+      .spyOn(mockAuthService, 'login')
+      .mockImplementation((loginDto: LoginDto) => {
+        if (
+          loginDto.email == userMock.email &&
+          loginDto.password == userMock.password
+        ) {
+          return authResponseMock;
+        } else {
+          throw new BadRequestException('');
+        }
       });
 
-      it('should throw error with invalid credentials', async () => {
-        const loginDto: LoginDto = {
+    it('should login user with valid credentials', async () => {
+      const authResponse: AuthResponse = await authController.login({
+        email: userMock.email,
+        password: userMock.password,
+      });
+
+      expect(authResponse).toEqual(authResponseMock);
+    });
+
+    it('should throw error with invalid credentials', async () => {
+      expect(() =>
+        authController.login({
           email: 'invalid email',
           password: 'invalid password',
-        };
-
-        expect(() => authController.login(loginDto)).toThrow(
-          BadRequestException,
-        );
-      });
+        }),
+      ).toThrow(BadRequestException);
     });
   });
 });

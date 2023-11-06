@@ -1,8 +1,8 @@
-import { Exclude, Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { Track, TrackFile } from '@prisma/client';
+import { Expose } from 'class-transformer';
+import { TrackFileResponse } from './trackFile.response';
 
-export class TrackEntity implements Track {
+export class TrackResponse {
   @ApiProperty({ required: true })
   @Expose()
   id: number;
@@ -37,14 +37,10 @@ export class TrackEntity implements Track {
   @Expose({ groups: ['isOwner'] })
   hiddenDescription: string;
 
-  @Exclude()
-  deletedAt: Date;
+  @Expose({ name: 'trackFile' })
+  file: TrackFileResponse;
 
-  @ApiProperty({ name: 'file' })
-  @Expose({ name: 'file' })
-  file: TrackFile;
-
-  constructor(partial?: Partial<TrackEntity>) {
+  constructor(partial?: Partial<TrackResponse>) {
     Object.assign(this, partial);
   }
 }

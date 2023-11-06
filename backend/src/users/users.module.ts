@@ -1,17 +1,26 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { IsFieldAlreadyExists } from './validators/isFieldAlReadyExists';
+import { IsEmailAlreadyExists } from './validators/is-email-already-exists.service';
 import { GetUserProfileMiddleware } from './middlewares/getUserProfile.middleware';
 import { UsersController } from './users.controller';
 import { ConfigModule } from '@nestjs/config';
 import { TracksModule } from '../tracks/tracks.module';
 import { JwtService } from '@nestjs/jwt';
 import { TracksService } from '../tracks/tracks.service';
+import { TracksRepository } from '../tracks/tracksRepository';
+import { UsersRepository } from './users.repository';
 
 @Module({
   imports: [ConfigModule, TracksModule],
   controllers: [UsersController],
-  providers: [UsersService, IsFieldAlreadyExists, JwtService, TracksService],
+  providers: [
+    UsersService,
+    UsersRepository,
+    IsEmailAlreadyExists,
+    JwtService,
+    TracksService,
+    TracksRepository,
+  ],
   exports: [UsersService],
 })
 export class UsersModule implements NestModule {

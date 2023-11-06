@@ -52,12 +52,9 @@ export class JwtAuthGuard {
       }
 
       // Case 3: The client has a valid token
-      try {
-        user = await this.userService.findById(+payload.sub);
-      } catch (err) {
-        throw new UnauthorizedException('Auth user not found');
-      }
+      user = await this.userService.getUserById(+payload.sub);
     }
+
     request.authUser = user;
     request.authUserAbility = this.abilityFactory.createForUser(
       request.authUser,

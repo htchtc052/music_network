@@ -1,58 +1,75 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersService } from '../src/users/users.service';
+import { IsEmailAlreadyExists } from '../src/users/validators/is-email-already-exists.service';
+import { UsersRepository } from '../src/users/users.repository';
 import { appSetup } from './utils/app.setup';
+import { AppModule } from '../src/app.module';
+import { AuthResponse } from '../src/auth/dto/authResponse';
 import { User } from '@prisma/client';
-import { RegisterDto } from '../src/auth/dto/register.dto';
-import { PrismaService } from 'nestjs-prisma';
-import { mockRegisterDto } from './mocks/mockUserData';
-import { setupTestEnviroment } from './utils/setupTestEnviroment';
 
 describe('Auth register', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
+  let usersService: UsersService;
 
   beforeAll(async () => {
-    moduleFixture = await setupTestEnviroment();
-    app = moduleFixture.createNestApplication();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+      providers: [UsersService, IsEmailAlreadyExists, UsersRepository],
+    }).compile();
 
+    app = moduleFixture.createNestApplication();
     appSetup(app);
 
     await app.init();
+
+    usersService = moduleFixture.get<UsersService>(UsersService);
   });
 
   afterAll(async () => {
     await app.close();
 
-    const prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    prismaService.user.delete({ where: { id: user.id } });
+    await usersService.deleteUser(user as unknown as User);
   });
 
-  const userData: RegisterDto = mockRegisterDto();
+  const email = 'test@mail.com';
+  const password = 'test1230';
+  const username = 'Test name';
 
-  let user: User;
+  let user: AuthResponse;
 
-  it('/auth/register (POST) - success', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send(userData);
+  describe('Auth routes', () => {
+    it('/auth/register (POST) - success', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          username,
+        });
 
-    user = res.body.user;
+      user = res.body as AuthResponse;
 
-    expect(res.statusCode).toEqual(HttpStatus.CREATED);
+      expect(res.statusCode).toEqual(HttpStatus.CREATED);
 
-    expect(user).toBeDefined();
-    expect(typeof res.body.tokens.accessToken).toBe('string');
-    expect(typeof res.body.tokens.refreshToken).toBe('string');
-  });
+      expect(user).toBeDefined();
+      expect(typeof user.accessToken).toBe('string');
+      expect(typeof user.refreshToken).toBe('string');
+    });
 
-  it('/auth/register (POST) - error exists email', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send(userData);
+    it('/auth/register (POST) - error exists email', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          username,
+        });
 
-    expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
-    expect(res.body.message[0]).toEqual('Email already exists');
+      expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+      expect(res.body.message[0]).toEqual('Email already exists');
+    });
   });
 });

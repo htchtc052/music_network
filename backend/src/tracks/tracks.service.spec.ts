@@ -1,29 +1,43 @@
 import { PrismaService } from 'nestjs-prisma';
-import { Track, TrackFile, User } from '@prisma/client';
-import { mockUser } from '../users/mocks/mockUser';
+import { Track, TrackFile } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TracksService } from './tracks.service';
-import { TrackEntity } from './entities/track.entity';
 import { ConfigService } from '@nestjs/config';
-import { mockTrack } from './tracks/mockTrack';
-import { mockUploadedTrackFile } from '../files/mocks/mockUploadedTrackFile';
-import { mockEditTrackInfoDto } from './mocks/mockEditTrackInfoDto';
-import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
+import {
+  editTrackInfoDtoMock,
+  trackMock,
+  trackWithFileMock,
+  uploadedTrackFileMock,
+} from './mocks/tracks.mocks';
+import { userMock } from '../users/mocks/users.mocks';
+import { TrackResponse } from './dtos/track.response';
+import { TracksRepository } from './tracksRepository';
+import { TrackWithFile } from './types/track.types';
 
 describe('TracksService', () => {
   let tracksService: TracksService;
-  let prisma: PrismaService;
-
-  const userMock: User = mockUser();
-  const trackMock: Track = mockTrack();
+  let mockTracksRepository = {
+    createTrack: jest.fn(),
+    createTrackFile: jest.fn(),
+    getTrackById: jest.fn(),
+    getTracksByCriteria: jest.fn(),
+    updateTrack: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [TracksService, PrismaService, ConfigService],
+      providers: [
+        TracksService,
+        PrismaService,
+        ConfigService,
+        {
+          provide: TracksRepository,
+          useValue: mockTracksRepository,
+        },
+      ],
     }).compile();
 
     tracksService = module.get<TracksService>(TracksService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
@@ -31,159 +45,88 @@ describe('TracksService', () => {
   });
 
   it('should create a new track', async () => {
-    const uploadedTrackFileMock: Express.Multer.File = mockUploadedTrackFile();
-
-    prisma.track.create = jest.fn().mockResolvedValue({
+    const trackMock: Track = {
+      id: 1,
       userId: userMock.id,
       title: uploadedTrackFileMock.originalname,
-      id: trackMock.id,
-    } as Track);
+    } as Track;
 
-    prisma.trackFile.create = jest.fn().mockResolvedValue({
+    const trackFileMock: TrackFile = {
+      trackId: trackMock.id,
       fileSize: uploadedTrackFileMock.size,
       filePath: uploadedTrackFileMock.path,
       mimetype: uploadedTrackFileMock.mimetype,
-      trackId: trackMock.id,
-    } as TrackFile);
+    } as TrackFile;
 
-    const result: TrackEntity = await tracksService.createTrack(
-      userMock,
-      uploadedTrackFileMock,
-      false,
-    );
-
-    expect(prisma.track.create).toHaveBeenCalledWith({
-      data: {
-        title: uploadedTrackFileMock.originalname,
-        userId: userMock.id,
-      },
+    const trackResponseMock: TrackResponse = new TrackResponse({
+      ...trackMock,
+      file: trackFileMock,
     });
 
-    expect(prisma.trackFile.create).toHaveBeenCalledWith({
-      data: {
-        fileSize: uploadedTrackFileMock.size,
-        filePath: uploadedTrackFileMock.path,
-        mimetype: uploadedTrackFileMock.mimetype,
-        trackId: trackMock.id,
-      },
-    });
+    jest
+      .spyOn(mockTracksRepository, 'createTrack')
+      .mockResolvedValue(trackMock);
 
-    expect(result.userId).toEqual(userMock.id);
-    expect(result.title).toEqual(uploadedTrackFileMock.originalname);
-    expect(result.file.filePath).toEqual(uploadedTrackFileMock.path);
-    expect(result.file.trackId).toEqual(trackMock.id);
-  });
+    jest
+      .spyOn(mockTracksRepository, 'createTrackFile')
+      .mockResolvedValue(trackFileMock);
 
-  describe('editInfo', () => {
-    it('Should update track info', async () => {
-      const editTrackInfoDtoMock: EditTrackInfoDto = mockEditTrackInfoDto();
-      const updatedTrackMock: Track = { ...trackMock, ...editTrackInfoDtoMock };
-
-      prisma.track.update = jest.fn().mockResolvedValueOnce(updatedTrackMock);
-
-      const editedTrack: Track = await tracksService.editInfo(
-        trackMock,
-        editTrackInfoDtoMock,
+    const trackResponse: TrackResponse =
+      await tracksService.createTrackByUploadedFile(
+        userMock,
+        uploadedTrackFileMock,
       );
 
-      expect(prisma.track.update).toHaveBeenCalledWith({
-        where: { id: trackMock.id },
-        data: {
-          title: editTrackInfoDtoMock.title,
-          description: editTrackInfoDtoMock.description,
-          hiddenDescription: editTrackInfoDtoMock.hiddenDescription,
-          private: editTrackInfoDtoMock.private,
-        },
-        include: {
-          file: true,
-        },
-      });
+    expect(trackResponse).toEqual(trackResponseMock);
+  });
 
-      expect(editedTrack).toEqual(updatedTrackMock);
+  describe('editTrackInfo', () => {
+    it('Should update track info', async () => {
+      const editedTrackMock: TrackWithFile = {
+        ...trackMock,
+        ...editTrackInfoDtoMock,
+      } as TrackWithFile;
+
+      jest
+        .spyOn(mockTracksRepository, 'updateTrack')
+        .mockResolvedValue(editedTrackMock);
+
+      const editedTrackResponse: TrackResponse =
+        await tracksService.editTrackInfo(trackMock, editTrackInfoDtoMock);
+
+      expect(editedTrackResponse).toEqual(new TrackResponse(editedTrackMock));
+    });
+  });
+
+  describe('GetTracksByUser', () => {
+    it('should return tracks for user', async () => {
+      const tracksResponseMock: TrackResponse[] = [trackWithFileMock];
+
+      jest
+        .spyOn(mockTracksRepository, 'getTracksByCriteria')
+        .mockResolvedValue(tracksResponseMock);
+
+      const tracksResponseDto: TrackResponse[] =
+        await tracksService.getTracksByUser(userMock, true);
+
+      expect(tracksResponseDto).toEqual(tracksResponseMock);
     });
   });
 
   describe('deleteTrack', () => {
     it('should mark track as deleted', async () => {
-      const deletedTrackMock: Track = { ...trackMock, deletedAt: new Date() };
+      const deletedTrackMock: Track = {
+        ...trackMock,
+        deletedAt: new Date(),
+      } as Track;
 
-      prisma.track.update = jest.fn().mockResolvedValueOnce(deletedTrackMock);
+      jest
+        .spyOn(mockTracksRepository, 'updateTrack')
+        .mockResolvedValue(deletedTrackMock);
 
       const deletedTrack: Track = await tracksService.deleteTrack(trackMock);
 
-      expect(prisma.track.update).toHaveBeenCalledWith({
-        where: { id: trackMock.id },
-        data: {
-          deletedAt: expect.any(Date),
-        },
-      });
-
       expect(deletedTrack).toEqual(deletedTrackMock);
-    });
-  });
-
-  describe('GetTracksByUser', () => {
-    const tracksMock: Track[] = [trackMock];
-
-    it('should return tracks for user as owner', async () => {
-      prisma.track.findMany = jest.fn().mockResolvedValueOnce(tracksMock);
-      const readAsOwner = true;
-
-      const result: Track[] = await tracksService.getTracksByUser(
-        userMock,
-        readAsOwner,
-      );
-      expect(prisma.track.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: userMock.id,
-          deletedAt: null,
-        },
-        include: {
-          file: true,
-        },
-      });
-
-      expect(result).toEqual(tracksMock);
-    });
-
-    it('should find track by ID with file', async () => {
-      prisma.track.findUnique = jest.fn().mockResolvedValue(trackMock);
-
-      const result: Track = await tracksService.findWithFileById(trackMock.id);
-
-      expect(prisma.track.findUnique).toHaveBeenCalledWith({
-        where: {
-          id: trackMock.id,
-          deletedAt: null,
-        },
-        include: {
-          file: true,
-        },
-      });
-
-      expect(result).toEqual(trackMock);
-    });
-
-    it('should return tracks for user as guest', async () => {
-      prisma.track.findMany = jest.fn().mockResolvedValue(tracksMock);
-      const readAsOwner = false;
-
-      const result: Track[] = await tracksService.getTracksByUser(
-        userMock,
-        readAsOwner,
-      );
-      expect(prisma.track.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: userMock.id,
-          deletedAt: null,
-          private: false,
-        },
-        include: {
-          file: true,
-        },
-      });
-
-      expect(result).toEqual(tracksMock);
     });
   });
 });

@@ -1,8 +1,8 @@
 import { Request } from 'express';
-import { Track } from '@prisma/client';
+import { TrackWithFile } from '../types/track.types';
 
 interface RequestWithTrack extends Request {
-  track: Track;
+  track: TrackWithFile;
 }
 
 export default RequestWithTrack;
