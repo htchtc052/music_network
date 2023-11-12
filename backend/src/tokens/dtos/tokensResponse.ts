@@ -8,4 +8,8 @@ export class TokensResponse {
   @ApiProperty()
   @Expose()
   refreshToken: string;
+
+  constructor(partial?: Partial<TokensResponse>) {
+    Object.assign(this, partial);
+  }
 }

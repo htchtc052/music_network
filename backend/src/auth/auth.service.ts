@@ -15,6 +15,7 @@ import { TokensService } from '../tokens/tokens.service';
 import { AuthResponse } from './dto/authResponse';
 import { TokensResponse } from '../tokens/dtos/tokensResponse';
 import { UsersRepository } from '../users/users.repository';
+import { UserResponse } from '../users/dtos/userResponse';
 
 @Injectable()
 export class AuthService {
@@ -27,12 +28,13 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const user: User = await this.usersService.createUser(registerDto);
 
-    const tokens = await this.tokensService.generateAndSaveTokens(user);
+    const tokensResponse: TokensResponse =
+      await this.tokensService.generateAndSaveTokens(user);
 
-    return new AuthResponse({
-      ...tokens,
-      ...user,
-    });
+    return {
+      ...tokensResponse,
+      user: new UserResponse(user),
+    };
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
@@ -44,10 +46,10 @@ export class AuthService {
     const tokensResponse: TokensResponse =
       await this.tokensService.generateAndSaveTokens(user);
 
-    return new AuthResponse({
+    return {
       ...tokensResponse,
-      ...user,
-    });
+      user: new UserResponse(user),
+    };
   }
 
   async validatePassword(
@@ -89,8 +91,14 @@ export class AuthService {
       refreshToken,
     );
 
+    if (!user) {
+      throw new BadRequestException('Refresh token not exists');
+    }
+
     await this.tokensService.deleteToken(refreshToken);
 
-    return this.tokensService.generateAndSaveTokens(user);
+    const tokens = await this.tokensService.generateAndSaveTokens(user);
+
+    return new TokensResponse(tokens);
   }
 }

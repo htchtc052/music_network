@@ -4,6 +4,8 @@ import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
 import { TrackResponse } from './dtos/track.response';
 import { TracksRepository } from './tracksRepository';
 import { TrackWhereFilter, TrackWithFile } from './types/track.types';
+import { CreateTrackDto } from './dtos/createTrack.dto';
+import { CreateTrackFileDto } from './dtos/createTrackFile.dto';
 
 @Injectable()
 export class TracksService {
@@ -13,18 +15,39 @@ export class TracksService {
     user: User,
     uploadedFile: Express.Multer.File,
   ): Promise<TrackResponse> {
-    const track: Track = await this.tracksRepository.createTrack({
+    const track: Track = await this.createTrack(user.id, {
       title: uploadedFile.originalname,
-      userId: user.id,
     });
 
-    const trackFile: TrackFile = await this.tracksRepository.createTrackFile({
-      fileSize: uploadedFile.size,
+    const trackFile: TrackFile = await this.createTrackFile(track.id, {
       filePath: uploadedFile.path,
+      fileSize: uploadedFile.size,
       mimetype: uploadedFile.mimetype,
-      trackId: track.id,
     });
+
     return new TrackResponse({ ...track, file: trackFile });
+  }
+
+  async createTrack(
+    userId: number,
+    createTrackDto: CreateTrackDto,
+  ): Promise<Track> {
+    return this.tracksRepository.createTrack({
+      title: createTrackDto.title,
+      userId,
+    });
+  }
+
+  async createTrackFile(
+    trackId: number,
+    createTrackFileDto: CreateTrackFileDto,
+  ): Promise<TrackFile> {
+    return this.tracksRepository.createTrackFile({
+      fileSize: createTrackFileDto.fileSize,
+      filePath: createTrackFileDto.filePath,
+      mimetype: createTrackFileDto.mimetype,
+      trackId,
+    });
   }
 
   async getTrackById(trackId: number): Promise<TrackWithFile> {

@@ -19,14 +19,8 @@ describe('TracksController', () => {
   let app: INestApplication;
   let tracksController: TracksController;
 
-  const mockTracksService = {
-    createTrackByUploadedFile: jest.fn(),
-    createTrack: jest.fn(),
-    createTrackFile: jest.fn(),
-    findWithFileById: jest.fn(),
-    editTrackInfo: jest.fn(),
-    deleteTrack: jest.fn(),
-  };
+  const mockTracksService: TracksService =
+    jest.createMockFromModule<TracksService>('./tracks.service');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -64,8 +58,8 @@ describe('TracksController', () => {
       } as TrackFile,
     } as TrackWithFile;
 
-    jest
-      .spyOn(mockTracksService, 'createTrackByUploadedFile')
+    mockTracksService.createTrackByUploadedFile = jest
+      .fn()
       .mockResolvedValue(trackResultMock);
 
     const track: TrackResponse = await tracksController.createTrack(
@@ -88,8 +82,8 @@ describe('TracksController', () => {
       ...editTrackInfoDtoMock,
     } as TrackResponse;
 
-    jest
-      .spyOn(mockTracksService, 'editTrackInfo')
+    mockTracksService.editTrackInfo = jest
+      .fn()
       .mockResolvedValue(editedTrackMock);
 
     const editedTrack: TrackResponse = await tracksController.editInfo(
@@ -106,8 +100,8 @@ describe('TracksController', () => {
       deletedAt: new Date(),
     } as Track;
 
-    jest
-      .spyOn(mockTracksService, 'deleteTrack')
+    mockTracksService.deleteTrack = jest
+      .fn()
       .mockResolvedValue(deletedTrackMock);
 
     const result: string = await tracksController.deleteTrack(

@@ -5,15 +5,17 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './dto/authResponse';
 import { userMock } from '../users/mocks/users.mocks';
-import { tokensResponse } from '../tokens/mocks/tokens.mocks';
+import {
+  refreshTokenMock,
+  tokensResponseMock,
+} from '../tokens/mocks/tokens.mocks';
+import { TokensResponse } from '../tokens/dtos/tokensResponse';
 
 describe('AuthController', () => {
   let app: INestApplication;
   let authController: AuthController;
-  const mockAuthService = {
-    register: jest.fn(),
-    login: jest.fn(),
-  };
+  const mockAuthService: AuthService =
+    jest.createMockFromModule<AuthService>('./auth.service');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,12 +38,12 @@ describe('AuthController', () => {
   });
 
   const authResponseMock = {
-    ...userMock,
-    ...tokensResponse,
-  } as AuthResponse;
+    user: userMock,
+    ...tokensResponseMock,
+  };
 
   it('should register user', async () => {
-    jest.spyOn(mockAuthService, 'register').mockResolvedValue(authResponseMock);
+    mockAuthService.register = jest.fn().mockResolvedValue(authResponseMock);
 
     const authResponse: AuthResponse = await authController.register({
       username: userMock.username,
@@ -53,8 +55,8 @@ describe('AuthController', () => {
   });
 
   describe('login routes', () => {
-    jest
-      .spyOn(mockAuthService, 'login')
+    mockAuthService.login = jest
+      .fn()
       .mockImplementation((loginDto: LoginDto) => {
         if (
           loginDto.email == userMock.email &&
@@ -82,6 +84,18 @@ describe('AuthController', () => {
           password: 'invalid password',
         }),
       ).toThrow(BadRequestException);
+    });
+
+    it('should refresh tokens', async () => {
+      mockAuthService.refreshTokens = jest
+        .fn()
+        .mockResolvedValue(tokensResponseMock);
+
+      const tokensResponse: TokensResponse = await authController.refreshTokens(
+        { refreshToken: refreshTokenMock },
+      );
+
+      expect(tokensResponse).toEqual(tokensResponseMock);
     });
   });
 });

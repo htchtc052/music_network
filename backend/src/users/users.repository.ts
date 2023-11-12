@@ -35,7 +35,6 @@ export class UsersRepository {
     return this.prisma.user.count({
       where: {
         email,
-        deletedAt: null,
       },
     });
   }
@@ -60,9 +59,16 @@ export class UsersRepository {
     return this.prisma.user.update({
       where: {
         id: userId,
-        deletedAt: null,
       },
       data: updateUserInput,
+    });
+  }
+
+  async deleteUserById(userId: number): Promise<User> {
+    return this.prisma.user.delete({
+      where: {
+        id: userId,
+      },
     });
   }
 }

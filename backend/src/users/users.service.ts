@@ -66,11 +66,7 @@ export class UsersService {
     return new UserResponse(updatedUser);
   }
 
-  async deleteUser(user: User): Promise<User> {
-    const deletedUser: User = (await this.usersRepository.updateUser(user.id, {
-      deletedAt: new Date(),
-    })) as User;
-
-    return deletedUser;
+  async softDeleteUser(user: User): Promise<User> {
+    return this.usersRepository.updateUser(user.id, { deletedAt: new Date() });
   }
 }

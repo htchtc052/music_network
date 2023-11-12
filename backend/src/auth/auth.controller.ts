@@ -5,8 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Req,
-  Request,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -20,6 +18,7 @@ import { AuthResponse } from './dto/authResponse';
 import { UserResponse } from '../users/dtos/userResponse';
 import { SerializerInterceptor } from '../commons/serializerInterceptor';
 import { TokensResponse } from '../tokens/dtos/tokensResponse';
+import { RefreshTokensDto } from './dto/refreshTokens.dto';
 
 @Controller('auth')
 //@UseGuards(JwtAuthGuard)
@@ -49,9 +48,10 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('refreshTokens')
-  refreshTokens(@Req() req: Request): Promise<TokensResponse> {
-    const refreshToken: string = req.body['refreshToken'];
-    return this.authService.refreshTokens(refreshToken);
+  refreshTokens(
+    @Body() refreshTokensDto: RefreshTokensDto,
+  ): Promise<TokensResponse> {
+    return this.authService.refreshTokens(refreshTokensDto.refreshToken);
   }
 
   @ApiOperation({ summary: 'Get own user' })

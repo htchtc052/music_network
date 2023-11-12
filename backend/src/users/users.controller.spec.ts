@@ -10,6 +10,7 @@ import { TrackResponse } from '../tracks/dtos/track.response';
 describe('UserController', () => {
   let app: INestApplication;
   let usersController: UsersController;
+
   const mockTracksService = {
     getTracksByUser: jest.fn(),
   };

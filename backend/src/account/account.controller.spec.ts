@@ -5,16 +5,13 @@ import { UsersService } from '../users/users.service';
 import { UserResponse } from '../users/dtos/userResponse';
 import { userMock } from '../users/mocks/users.mocks';
 import { editUserInfoDtoMock } from './mocks/account.mocks';
-import { User } from '@prisma/client';
 
 describe('AccountController', () => {
   let app: INestApplication;
   let accountController: AccountController;
 
-  const mockUsersService = {
-    editUserInfo: jest.fn(),
-    deleteUser: jest.fn(),
-  };
+  const mockUsersService: UsersService =
+    jest.createMockFromModule<UsersService>('../users/users.service');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -43,8 +40,8 @@ describe('AccountController', () => {
         ...editUserInfoDtoMock,
       } as UserResponse;
 
-      jest
-        .spyOn(mockUsersService, 'editUserInfo')
+      mockUsersService.editUserInfo = jest
+        .fn()
         .mockResolvedValue(editedUserResponseMock);
 
       const editedUserResponse: UserResponse =
@@ -54,18 +51,14 @@ describe('AccountController', () => {
     });
 
     it('should delete a user', async () => {
-      const deletedUserMock: User = {
+      mockUsersService.softDeleteUser = jest.fn().mockResolvedValue({
         ...userMock,
         deletedAt: new Date(),
-      } as User;
+      });
 
-      jest
-        .spyOn(mockUsersService, 'deleteUser')
-        .mockResolvedValue(deletedUserMock);
+      const result: string = await accountController.softDeleteUser(userMock);
 
-      const result: string = await accountController.deleteUser(userMock);
-
-      expect(result).toEqual(`User ${deletedUserMock.id} successfully deleted`);
+      expect(result).toEqual(`User ${userMock.id} successfully deleted`);
     });
   });
 });

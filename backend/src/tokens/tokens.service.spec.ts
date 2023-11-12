@@ -8,7 +8,7 @@ import { TokensResponse } from './dtos/tokensResponse';
 import {
   jwtPayloadMock,
   refreshTokenMock,
-  tokensResponse,
+  tokensResponseMock,
 } from './mocks/tokens.mocks';
 import { userMock } from '../users/mocks/users.mocks';
 import { UsersRepository } from '../users/users.repository';
@@ -88,11 +88,11 @@ describe('TokensService', () => {
   it('should generate tokens and save refresh token', async () => {
     jest
       .spyOn(tokensService, 'signAccessToken')
-      .mockResolvedValueOnce(tokensResponse.accessToken);
+      .mockResolvedValueOnce(tokensResponseMock.accessToken);
 
     jest
       .spyOn(tokensService, 'signRefreshToken')
-      .mockResolvedValueOnce(tokensResponse.refreshToken);
+      .mockResolvedValueOnce(tokensResponseMock.refreshToken);
 
     jest
       .spyOn(tokensService, 'saveRefreshToken')
@@ -107,15 +107,15 @@ describe('TokensService', () => {
   it('should sign access and refresh token', async () => {
     jest
       .spyOn(jwtService, 'signAsync')
-      .mockResolvedValueOnce(tokensResponse.accessToken);
+      .mockResolvedValueOnce(tokensResponseMock.accessToken);
 
     jest
       .spyOn(jwtService, 'signAsync')
-      .mockResolvedValueOnce(tokensResponse.refreshToken);
+      .mockResolvedValueOnce(tokensResponseMock.refreshToken);
 
     const accessToken = await tokensService.signAccessToken(userMock);
     const refreshToken = await tokensService.signRefreshToken(userMock);
 
-    expect({ accessToken, refreshToken }).toEqual(tokensResponse);
+    expect({ accessToken, refreshToken }).toEqual(tokensResponseMock);
   });
 });

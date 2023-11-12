@@ -16,13 +16,8 @@ import { TrackWithFile } from './types/track.types';
 
 describe('TracksService', () => {
   let tracksService: TracksService;
-  let mockTracksRepository = {
-    createTrack: jest.fn(),
-    createTrackFile: jest.fn(),
-    getTrackById: jest.fn(),
-    getTracksByCriteria: jest.fn(),
-    updateTrack: jest.fn(),
-  };
+  let mockTracksRepository: TracksRepository =
+    jest.createMockFromModule<TracksRepository>('./tracksRepository');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -63,13 +58,9 @@ describe('TracksService', () => {
       file: trackFileMock,
     });
 
-    jest
-      .spyOn(mockTracksRepository, 'createTrack')
-      .mockResolvedValue(trackMock);
+    tracksService.createTrack = jest.fn().mockResolvedValue(trackMock);
 
-    jest
-      .spyOn(mockTracksRepository, 'createTrackFile')
-      .mockResolvedValue(trackFileMock);
+    tracksService.createTrackFile = jest.fn().mockResolvedValue(trackFileMock);
 
     const trackResponse: TrackResponse =
       await tracksService.createTrackByUploadedFile(
@@ -87,8 +78,8 @@ describe('TracksService', () => {
         ...editTrackInfoDtoMock,
       } as TrackWithFile;
 
-      jest
-        .spyOn(mockTracksRepository, 'updateTrack')
+      mockTracksRepository.updateTrack = jest
+        .fn()
         .mockResolvedValue(editedTrackMock);
 
       const editedTrackResponse: TrackResponse =
@@ -102,8 +93,8 @@ describe('TracksService', () => {
     it('should return tracks for user', async () => {
       const tracksResponseMock: TrackResponse[] = [trackWithFileMock];
 
-      jest
-        .spyOn(mockTracksRepository, 'getTracksByCriteria')
+      mockTracksRepository.getTracksByCriteria = jest
+        .fn()
         .mockResolvedValue(tracksResponseMock);
 
       const tracksResponseDto: TrackResponse[] =
@@ -120,8 +111,8 @@ describe('TracksService', () => {
         deletedAt: new Date(),
       } as Track;
 
-      jest
-        .spyOn(mockTracksRepository, 'updateTrack')
+      mockTracksRepository.updateTrack = jest
+        .fn()
         .mockResolvedValue(deletedTrackMock);
 
       const deletedTrack: Track = await tracksService.deleteTrack(trackMock);

@@ -32,8 +32,8 @@ export class AccountController {
 
   @ApiOperation({ summary: 'Delete user' })
   @Delete('deleteUser')
-  async deleteUser(@AuthUser() authUser: User): Promise<string> {
-    const deletedUser: User = await this.usersService.deleteUser(authUser);
+  async softDeleteUser(@AuthUser() authUser: User): Promise<string> {
+    const deletedUser: User = await this.usersService.softDeleteUser(authUser);
     return `User ${deletedUser.id} successfully deleted`;
   }
 }

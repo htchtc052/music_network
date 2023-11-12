@@ -29,6 +29,8 @@ export class JwtAuthGuard {
     const request = context.switchToHttp().getRequest<RequestWithAuthUser>();
     const token = this.extractTokenFromHeader(request);
 
+    //console.log(`Accessing route: ${request.route.path} token=${token}`);
+
     const isPublic: boolean = this.reflector.get<boolean>(
       IS_PUBLIC_KEY,
       context.getHandler(),
@@ -56,6 +58,7 @@ export class JwtAuthGuard {
     }
 
     request.authUser = user;
+
     request.authUserAbility = this.abilityFactory.createForUser(
       request.authUser,
     );

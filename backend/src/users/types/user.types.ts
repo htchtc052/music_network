@@ -1,11 +1,5 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 
-export type UserWhereFilter = Prisma.UserUpdateInput;
-
-export type UserWithToken = Prisma.UserGetPayload<{
-  include: { Token: true };
-}>;
-
-export type UserUpdateInput = Prisma.UserUpdateInput;
+export type UserUpdateInput = Partial<User>;
 
 export type UserUncheckedCreateInput = Prisma.UserUncheckedCreateInput;

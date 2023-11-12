@@ -3,7 +3,7 @@ import { JwtTokenDecoded } from '../types/JwtPayload.type';
 
 export const accessTokenMock = 'test_access_token';
 export const refreshTokenMock = 'test_access_token';
-export const tokensResponse: TokensResponse = {
+export const tokensResponseMock: TokensResponse = {
   accessToken: accessTokenMock,
   refreshToken: refreshTokenMock,
 } as TokensResponse;

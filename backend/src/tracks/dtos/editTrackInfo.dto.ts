@@ -1,4 +1,4 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EditTrackInfoDto {
@@ -7,12 +7,14 @@ export class EditTrackInfoDto {
   title: string;
 
   @ApiProperty({ example: 'My awesome song', description: 'Track description' })
+  @IsOptional()
   description: string;
 
   @ApiProperty({
     example: 'My awesome  song info',
     description: 'Track hidden description',
   })
+  @IsOptional()
   hiddenDescription: string;
 
   @ApiProperty({

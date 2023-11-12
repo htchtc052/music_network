@@ -4,7 +4,7 @@ import { UsersService } from '../users/users.service';
 import { BadRequestException } from '@nestjs/common';
 import { TokensService } from '../tokens/tokens.service';
 import { AuthResponse } from './dto/authResponse';
-import { tokensResponse } from '../tokens/mocks/tokens.mocks';
+import { tokensResponseMock } from '../tokens/mocks/tokens.mocks';
 import { userMock } from '../users/mocks/users.mocks';
 import { UsersRepository } from '../users/users.repository';
 
@@ -49,9 +49,9 @@ describe('AuthService', () => {
 
   describe('Auth routes', () => {
     const authResponseDtoMock = {
-      ...userMock,
-      ...tokensResponse,
-    } as AuthResponse;
+      user: userMock,
+      ...tokensResponseMock,
+    };
 
     it('should create new user', async () => {
       jest
@@ -60,7 +60,7 @@ describe('AuthService', () => {
 
       jest
         .spyOn(mockTokensService, 'generateAndSaveTokens')
-        .mockResolvedValue(tokensResponse);
+        .mockResolvedValue(tokensResponseMock);
 
       const authResponse: AuthResponse = await authService.register({
         username: userMock.username,
@@ -90,7 +90,7 @@ describe('AuthService', () => {
 
       jest
         .spyOn(mockTokensService, 'generateAndSaveTokens')
-        .mockResolvedValue(tokensResponse);
+        .mockResolvedValue(tokensResponseMock);
 
       const authResponse: AuthResponse = await authService.login({
         email: userMock.email,

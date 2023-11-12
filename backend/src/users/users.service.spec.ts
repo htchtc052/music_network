@@ -12,12 +12,8 @@ import { UserResponse } from './dtos/userResponse';
 describe('UsersService', () => {
   let usersService: UsersService;
 
-  let mockUsersRepository = {
-    createUser: jest.fn(),
-    getUserById: jest.fn(),
-    getUserByEmail: jest.fn(),
-    updateUser: jest.fn(),
-  };
+  let mockUsersRepository: UsersRepository =
+    jest.createMockFromModule<UsersRepository>('./users.repository');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -39,13 +35,8 @@ describe('UsersService', () => {
   });
 
   it('should create a new user', async () => {
-    jest.spyOn(mockUsersRepository, 'createUser').mockResolvedValue(userMock);
-
-    jest
-      .spyOn(usersService, 'hashPassword')
-      .mockResolvedValue(userMock.password);
-
-    jest.spyOn(mockUsersRepository, 'createUser').mockResolvedValue(userMock);
+    mockUsersRepository.createUser = jest.fn().mockResolvedValue(userMock);
+    usersService.hashPassword = jest.fn().mockResolvedValue(userMock.password);
 
     const user: User = await usersService.createUser({
       username: userMock.username,
@@ -57,7 +48,7 @@ describe('UsersService', () => {
   });
 
   it('should find user by id', async () => {
-    jest.spyOn(mockUsersRepository, 'getUserById').mockResolvedValue(userMock);
+    mockUsersRepository.getUserById = jest.fn().mockResolvedValue(userMock);
 
     const user: User = await usersService.getUserById(userMock.id);
 
@@ -71,8 +62,8 @@ describe('UsersService', () => {
         ...editUserInfoDtoMock,
       } as User;
 
-      jest
-        .spyOn(mockUsersRepository, 'updateUser')
+      mockUsersRepository.updateUser = jest
+        .fn()
         .mockResolvedValue(editedUserMock);
 
       const editedUserResponse: UserResponse = await usersService.editUserInfo(
@@ -86,18 +77,13 @@ describe('UsersService', () => {
 
   describe('deleteUser', () => {
     it('should mark user as deleted', async () => {
-      const deletedUserMock: User = {
-        ...userMock,
-        deletedAt: new Date(),
-      } as User;
+      mockUsersRepository.updateUser = jest
+        .fn()
+        .mockResolvedValue({ ...userMock, deletedAt: new Date() });
 
-      jest
-        .spyOn(mockUsersRepository, 'updateUser')
-        .mockResolvedValue(deletedUserMock);
+      const deletedUser: User = await usersService.softDeleteUser(userMock);
 
-      const deletedUser: User = await usersService.deleteUser(userMock);
-
-      expect(deletedUser).toEqual(deletedUserMock);
+      expect(deletedUser).toEqual({ ...userMock, deletedAt: new Date() });
     });
   });
 });
