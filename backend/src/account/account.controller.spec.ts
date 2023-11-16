@@ -51,7 +51,7 @@ describe('AccountController', () => {
     });
 
     it('should delete a user', async () => {
-      mockUsersService.softDeleteUser = jest.fn().mockResolvedValue({
+      mockUsersService.markUserDeleted = jest.fn().mockResolvedValue({
         ...userMock,
         deletedAt: new Date(),
       });

@@ -21,7 +21,6 @@ import { TokensResponse } from '../tokens/dtos/tokensResponse';
 import { RefreshTokensDto } from './dto/refreshTokens.dto';
 
 @Controller('auth')
-//@UseGuards(JwtAuthGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 

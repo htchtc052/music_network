@@ -1,26 +1,26 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-import { v4 as uuid } from 'uuid';
 import * as argon2 from 'argon2';
-import { User } from '@prisma/client';
+import { Token, User } from '@prisma/client';
 import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { UsersRepository } from './users.repository';
 import { UserResponse } from './dtos/userResponse';
+import { TokensService } from '../tokens/tokens.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private usersRepository: UsersRepository,
+    private tokensService: TokensService,
+  ) {}
 
   async createUser(registerDto: RegisterDto): Promise<User> {
     const hashedPassword = await this.hashPassword(registerDto.password);
 
-    const activationToken: string = uuid();
     const user: User = await this.usersRepository.createUser({
       password: hashedPassword,
       email: registerDto.email,
       username: registerDto.username,
-      activationToken,
     });
 
     return user;
@@ -66,7 +66,37 @@ export class UsersService {
     return new UserResponse(updatedUser);
   }
 
-  async softDeleteUser(user: User): Promise<User> {
-    return this.usersRepository.updateUser(user.id, { deletedAt: new Date() });
+  async markUserDeleted(userId: number): Promise<User> {
+    return this.usersRepository.updateUser(userId, { deletedAt: new Date() });
+  }
+
+  async markEmailAsConfirmed(userId: number) {
+    return this.usersRepository.updateUser(userId, {
+      emailConfirmedAt: new Date(),
+    });
+  }
+
+  async saveUserRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<void> {
+    await this.usersRepository.createRefreshToken({
+      refreshToken,
+      userId,
+    });
+  }
+
+  async checkUserByRefreshToken(refreshToken: string): Promise<User> {
+    const token: Token = await this.usersRepository.getUserToken({
+      refreshToken,
+    });
+
+    const user: User = await this.usersRepository.getUserById(token.userId);
+
+    return user;
+  }
+
+  deleteUserRefreshToken(userId: number, refreshToken: string) {
+    return this.usersRepository.deleteUserToken({ userId, refreshToken });
   }
 }

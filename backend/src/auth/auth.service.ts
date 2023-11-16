@@ -1,35 +1,33 @@
-import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
 import { User } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtTokenDecoded } from '../tokens/types/JwtPayload.type';
 import { TokensService } from '../tokens/tokens.service';
 
 import { AuthResponse } from './dto/authResponse';
 import { TokensResponse } from '../tokens/dtos/tokensResponse';
-import { UsersRepository } from '../users/users.repository';
 import { UserResponse } from '../users/dtos/userResponse';
+import { JwtParams } from '../tokens/types/JwtParams.type';
+import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private usersRepository: UsersRepository,
     private tokensService: TokensService,
+    private emailConfirmationService: EmailConfirmationService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const user: User = await this.usersService.createUser(registerDto);
 
-    const tokensResponse: TokensResponse =
-      await this.tokensService.generateAndSaveTokens(user);
+    const tokensResponse: TokensResponse = await this.generateAndSaveTokens(
+      user.id,
+    );
+
+    await this.emailConfirmationService.sendEmailVerificationEmail(user);
 
     return {
       ...tokensResponse,
@@ -43,8 +41,9 @@ export class AuthService {
     if (!(await this.validatePassword(user.password, loginDto.password)))
       throw new BadRequestException('Password is incorrect');
 
-    const tokensResponse: TokensResponse =
-      await this.tokensService.generateAndSaveTokens(user);
+    const tokensResponse: TokensResponse = await this.generateAndSaveTokens(
+      user.id,
+    );
 
     return {
       ...tokensResponse,
@@ -69,7 +68,11 @@ export class AuthService {
       throw new BadRequestException('Token ID required');
     }
 
-    await this.tokensService.deleteToken(refreshToken);
+    const payload: JwtParams = await this.tokensService.decodeJwtRefreshToken(
+      refreshToken,
+    );
+
+    await this.usersService.deleteUserRefreshToken(+payload.sub, refreshToken);
   }
 
   async refreshTokens(refreshToken: string): Promise<TokensResponse> {
@@ -77,28 +80,32 @@ export class AuthService {
       throw new BadRequestException('Refresh token is required');
     }
 
-    let tokenPayload: JwtTokenDecoded =
-      await this.tokensService.decodeRefreshToken(refreshToken);
-
-    if (tokenPayload.exp * 1000 < Date.now()) {
-      throw new HttpException(
-        'Refresh token has expired',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const user: User = await this.tokensService.getUserByRefreshToken(
+    const payload: JwtParams = await this.tokensService.decodeJwtRefreshToken(
       refreshToken,
     );
 
-    if (!user) {
+    const user: User = await this.usersService.checkUserByRefreshToken(
+      refreshToken,
+    );
+
+    if (!user || user.id != parseInt(payload.sub)) {
       throw new BadRequestException('Refresh token not exists');
     }
 
-    await this.tokensService.deleteToken(refreshToken);
+    await this.usersService.deleteUserRefreshToken(+payload.sub, refreshToken);
 
-    const tokens = await this.tokensService.generateAndSaveTokens(user);
+    const tokens: TokensResponse = await this.generateAndSaveTokens(user.id);
 
     return new TokensResponse(tokens);
+  }
+
+  async generateAndSaveTokens(userId: number): Promise<TokensResponse> {
+    const accessToken = await this.tokensService.signAccessToken(userId);
+
+    const refreshToken = await this.tokensService.signRefreshToken(userId);
+
+    await this.usersService.saveUserRefreshToken(userId, refreshToken);
+
+    return { accessToken, refreshToken };
   }
 }

@@ -48,6 +48,13 @@ services:
       - "5433:5432" # порт для тестовой базы данных
     networks:
       - music-network
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - 1080:1080
+      - 5555:1025
+    networks:
+      - music-network
 volumes:
   docker-postgres:
   docker-postgres-test:

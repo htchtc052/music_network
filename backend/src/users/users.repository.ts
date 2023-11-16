@@ -1,15 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import { Prisma, User } from '@prisma/client';
-import { UserUncheckedCreateInput, UserUpdateInput } from './types/user.types';
+import { Prisma, Token, User } from '@prisma/client';
 
 @Injectable()
 export class UsersRepository {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(userCreateInput: UserUncheckedCreateInput): Promise<User> {
+  async createUser(
+    userCreateInput: Prisma.UserUncheckedCreateInput,
+  ): Promise<User> {
     return this.prisma.user.create({
       data: userCreateInput,
+    });
+  }
+
+  async createRefreshToken(
+    tokenCreateInput: Prisma.TokenUncheckedCreateInput,
+  ): Promise<Token> {
+    return this.prisma.token.create({
+      data: tokenCreateInput,
     });
   }
 
@@ -39,22 +48,9 @@ export class UsersRepository {
     });
   }
 
-  async getUserByRefreshToken(refreshToken: string): Promise<User> {
-    return this.prisma.user.findFirst({
-      where: {
-        deletedAt: null,
-        Token: {
-          some: {
-            refreshToken,
-          },
-        },
-      },
-    });
-  }
-
   async updateUser(
     userId: number,
-    updateUserInput: UserUpdateInput,
+    updateUserInput: Partial<User>,
   ): Promise<User> {
     return this.prisma.user.update({
       where: {
@@ -64,11 +60,11 @@ export class UsersRepository {
     });
   }
 
-  async deleteUserById(userId: number): Promise<User> {
-    return this.prisma.user.delete({
-      where: {
-        id: userId,
-      },
-    });
+  async getUserToken(tokenData: Prisma.TokenWhereUniqueInput): Promise<Token> {
+    return this.prisma.token.findUnique({ where: tokenData });
+  }
+
+  async deleteUserToken(tokenData: Prisma.TokenWhereUniqueInput) {
+    await this.prisma.token.delete({ where: tokenData });
   }
 }

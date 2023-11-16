@@ -8,9 +8,13 @@ import { editUserInfoDtoMock } from '../account/mocks/account.mocks';
 import { UsersRepository } from './users.repository';
 import { TrackResponse } from '../tracks/dtos/track.response';
 import { UserResponse } from './dtos/userResponse';
+import { TokensService } from '../tokens/tokens.service';
 
 describe('UsersService', () => {
   let usersService: UsersService;
+
+  const mockTokensService: TokensService =
+    jest.createMockFromModule<TokensService>('../tokens/tokens.service');
 
   let mockUsersRepository: UsersRepository =
     jest.createMockFromModule<UsersRepository>('./users.repository');
@@ -23,6 +27,10 @@ describe('UsersService', () => {
         {
           provide: UsersRepository,
           useValue: mockUsersRepository,
+        },
+        {
+          provide: TokensService,
+          useValue: mockTokensService,
         },
       ],
     }).compile();
@@ -77,13 +85,21 @@ describe('UsersService', () => {
 
   describe('deleteUser', () => {
     it('should mark user as deleted', async () => {
+      const deletedAt = { deletedAt: new Date() };
+      const deletedUserMock = { ...userMock, deletedAt };
+
       mockUsersRepository.updateUser = jest
         .fn()
-        .mockResolvedValue({ ...userMock, deletedAt: new Date() });
+        .mockResolvedValue(deletedUserMock);
 
-      const deletedUser: User = await usersService.softDeleteUser(userMock);
+      const deletedUser: User = await usersService.markUserDeleted(userMock.id);
 
-      expect(deletedUser).toEqual({ ...userMock, deletedAt: new Date() });
+      expect(mockUsersRepository.updateUser).toHaveBeenCalledWith(
+        userMock.id,
+        deletedAt,
+      );
+
+      expect(deletedUser).toEqual(deletedUserMock);
     });
   });
 });

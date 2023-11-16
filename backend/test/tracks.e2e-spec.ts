@@ -1,7 +1,6 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../src/app.module';
+import { TestingModule } from '@nestjs/testing';
 import { appSetup } from './utils/app.setup';
 import { AuthResponse } from '../src/auth/dto/authResponse';
 import { EditTrackInfoDto } from '../src/tracks/dtos/editTrackInfo.dto';
@@ -9,6 +8,7 @@ import { TrackResponse } from '../src/tracks/dtos/track.response';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 import { readdirSync, unlinkSync } from 'fs';
+import { createTestingModule } from './utils/createTestingModule';
 
 describe('Auth routes', () => {
   let app: INestApplication;
@@ -16,11 +16,10 @@ describe('Auth routes', () => {
 
   let ownerUser: AuthResponse;
 
+  class MockMailerService {}
+
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-      providers: [],
-    }).compile();
+    const moduleFixture: TestingModule = await createTestingModule();
 
     app = moduleFixture.createNestApplication();
     appSetup(app);
@@ -32,7 +31,7 @@ describe('Auth routes', () => {
     const res = await request(app.getHttpServer())
       .post('/auth/register')
       .send({
-        email: `user.${testSuiteName}.1}@mail.com`,
+        email: `user.${testSuiteName}.1@mail.com`,
         password: `user.${testSuiteName}.1`,
         username: `User ${testSuiteName} 1`,
       });

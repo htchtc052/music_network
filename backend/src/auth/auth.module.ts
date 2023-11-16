@@ -2,14 +2,25 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { TokensService } from '../tokens/tokens.service';
 import { TokensModule } from '../tokens/tokens.module';
+import { TokensService } from '../tokens/tokens.service';
+import { UsersService } from '../users/users.service';
 import { UsersRepository } from '../users/users.repository';
-import { TokensRepository } from '../tokens/tokens.repository';
+import { EmailConfirmationModule } from '../email-confirmation/email-confirmation.module';
+import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
+import { EmailModule } from '../email/email.module';
+import { EmailService } from '../email/email.service';
 
 @Module({
-  imports: [UsersModule, TokensModule],
+  imports: [UsersModule, TokensModule, EmailModule, EmailConfirmationModule],
   controllers: [AuthController],
-  providers: [AuthService, TokensService, UsersRepository, TokensRepository],
+  providers: [
+    AuthService,
+    TokensService,
+    UsersService,
+    UsersRepository,
+    EmailService,
+    EmailConfirmationService,
+  ],
 })
 export class AuthModule {}

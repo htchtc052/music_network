@@ -1,84 +1,101 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { User } from '@prisma/client';
-import { JwtTokenDecoded } from './types/JwtPayload.type';
 import { v4 as uuidv4 } from 'uuid';
-import { TokensResponse } from './dtos/tokensResponse';
-import { TokensRepository } from './tokens.repository';
-import { UsersRepository } from '../users/users.repository';
+import { JwtParams } from './types/JwtParams.type';
+
+const TOKEN_SCOPES = {
+  ACCESS_SCOPE: 'ACCESS',
+  REFRESH_SCOPE: 'REFRESH_SCOPE',
+  EMAIL_VERIFICATION_SCOPE: 'EMAIL_VERIFICATION',
+};
 
 @Injectable()
 export class TokensService {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    private tokensRepository: TokensRepository,
-    private usersRepository: UsersRepository,
   ) {}
 
-  async saveRefreshToken(user: User, refreshToken: string): Promise<void> {
-    const refreshTokenDecoded: JwtTokenDecoded = this.jwtService.decode(
-      refreshToken,
-    ) as JwtTokenDecoded | null;
-    await this.tokensRepository.createToken({
-      userId: user.id,
-      refreshToken,
-      expiresAt: new Date(refreshTokenDecoded.iat * 1000),
-      createdAt: new Date(refreshTokenDecoded.exp * 1000),
-    });
+  signAccessToken(userId: number) {
+    return this.signToken(userId, TOKEN_SCOPES.ACCESS_SCOPE);
   }
 
-  getUserByRefreshToken(refreshToken: string): Promise<User> {
-    return this.usersRepository.getUserByRefreshToken(refreshToken);
+  signRefreshToken(userId: number) {
+    return this.signToken(userId, TOKEN_SCOPES.REFRESH_SCOPE);
   }
 
-  async deleteToken(refreshToken: string) {
-    await this.tokensRepository.deleteByRefreshToken(refreshToken);
+  signEmailVerificationToken(userId: number) {
+    return this.signToken(userId, TOKEN_SCOPES.EMAIL_VERIFICATION_SCOPE);
   }
 
-  async decodeRefreshToken(refreshToken: string): Promise<JwtTokenDecoded> {
-    let tokenPayload: JwtTokenDecoded;
+  private signToken(userId: number, scope: string) {
+    let options: JwtSignOptions = {
+      subject: userId.toString(),
+    };
+
+    if (scope === TOKEN_SCOPES.ACCESS_SCOPE) {
+      options = {
+        ...options,
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: '5m',
+      };
+    } else if (scope === TOKEN_SCOPES.REFRESH_SCOPE) {
+      options = {
+        ...options,
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: '1h',
+      };
+    } else if (scope === TOKEN_SCOPES.EMAIL_VERIFICATION_SCOPE) {
+      options = {
+        ...options,
+        secret: this.configService.get<string>('JWT_EMAIL_VERIFICATION_SECRET'),
+        expiresIn: '1h',
+      };
+    }
+
+    return this.jwtService.signAsync({ sid: uuidv4() }, options);
+  }
+
+  decodeJwtAccessToken(token: string): Promise<JwtParams> {
+    return this.decodeJwtToken(token, TOKEN_SCOPES.ACCESS_SCOPE);
+  }
+
+  decodeJwtRefreshToken(token: string): Promise<JwtParams> {
+    return this.decodeJwtToken(token, TOKEN_SCOPES.REFRESH_SCOPE);
+  }
+
+  decodeJwtEmailVerificationToken(token: string): Promise<JwtParams> {
+    return this.decodeJwtToken(token, TOKEN_SCOPES.EMAIL_VERIFICATION_SCOPE);
+  }
+
+  private async decodeJwtToken(
+    token: string,
+    scope: string,
+  ): Promise<JwtParams> {
+    let tokenPayload: JwtParams;
+
+    let secret: string;
+
+    if (scope === TOKEN_SCOPES.ACCESS_SCOPE) {
+      secret = this.configService.get<string>('JWT_ACCESS_SECRET');
+    } else if (scope === TOKEN_SCOPES.REFRESH_SCOPE) {
+      secret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    } else if (scope === TOKEN_SCOPES.EMAIL_VERIFICATION_SCOPE) {
+      secret = this.configService.get<string>('JWT_EMAIL_VERIFICATION_SECRET');
+    }
 
     try {
-      tokenPayload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      tokenPayload = await this.jwtService.verifyAsync(token, {
+        secret,
       });
 
       return tokenPayload;
     } catch (err) {
-      console.error(err);
-      throw new UnauthorizedException('Invalid refresh token');
+      if (err?.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token expired');
+      }
+      throw new UnauthorizedException('Invalid token');
     }
-  }
-
-  async generateAndSaveTokens(user: User): Promise<TokensResponse> {
-    const accessToken = await this.signAccessToken(user);
-    const refreshToken = await this.signRefreshToken(user);
-
-    await this.saveRefreshToken(user, refreshToken);
-    return { accessToken, refreshToken };
-  }
-
-  async signAccessToken(user: User): Promise<string> {
-    return this.jwtService.signAsync(
-      { sid: uuidv4() },
-      {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_LIFE'),
-        subject: user.id.toString(),
-      },
-    );
-  }
-
-  async signRefreshToken(user: User): Promise<string> {
-    return this.jwtService.signAsync(
-      { sid: uuidv4() },
-      {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_LIFE'),
-        subject: user.id.toString(),
-      },
-    );
   }
 }

@@ -9,9 +9,11 @@ import { JwtService } from '@nestjs/jwt';
 import { TracksService } from '../tracks/tracks.service';
 import { TracksRepository } from '../tracks/tracksRepository';
 import { UsersRepository } from './users.repository';
+import { TokensService } from '../tokens/tokens.service';
+import { TokensModule } from '../tokens/tokens.module';
 
 @Module({
-  imports: [ConfigModule, TracksModule],
+  imports: [ConfigModule, TracksModule, TokensModule],
   controllers: [UsersController],
   providers: [
     UsersService,
@@ -20,6 +22,7 @@ import { UsersRepository } from './users.repository';
     JwtService,
     TracksService,
     TracksRepository,
+    TokensService,
   ],
   exports: [UsersService],
 })

@@ -1,3 +1,8 @@
-export type JwtEmailConfirmationPayload = {
-  sub: string;
+import { JwtParams } from './JwtParams.type';
+
+export type JwtEmailVerificationTokenPayload = {
+  email: string;
 };
+
+export type JwtEmailVerificationTokenDecoded =
+  JwtEmailVerificationTokenPayload & JwtParams;

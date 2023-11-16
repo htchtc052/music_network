@@ -1,21 +1,20 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import { appSetup } from './utils/app.setup';
-import { AppModule } from '../src/app.module';
 import { AuthResponse } from '../src/auth/dto/authResponse';
 import { RegisterDto } from '../src/auth/dto/register.dto';
 import { EditUserInfoDto } from '../src/account/dtos/editUserInfo.dto';
 import { Genders } from '@prisma/client';
+import { createTestingModule } from './utils/createTestingModule';
 
 describe('Auth routes', () => {
   let app: INestApplication;
 
+  class MockMailerService {}
+
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-      providers: [],
-    }).compile();
+    const moduleFixture: TestingModule = await createTestingModule();
 
     app = moduleFixture.createNestApplication();
     appSetup(app);
