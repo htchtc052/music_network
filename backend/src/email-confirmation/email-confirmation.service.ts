@@ -1,4 +1,3 @@
-import { JwtParams } from '../tokens/types/JwtParams.type';
 import { User } from '@prisma/client';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
@@ -16,7 +15,7 @@ export class EmailConfirmationService {
   async sendEmailVerificationEmail(user: User): Promise<void> {
     try {
       const verificationToken =
-        await this.tokensService.signEmailVerificationToken(user.id);
+        await this.tokensService.signEmailConfirmationToken(user.id);
 
       await this.emailService.sendEmailVerificationEmail(
         user,
@@ -35,12 +34,7 @@ export class EmailConfirmationService {
     await this.sendEmailVerificationEmail(user);
   }
 
-  async confirmEmail(token: string) {
-    const payload: JwtParams =
-      await this.tokensService.decodeJwtEmailVerificationToken(token);
-
-    const user: User = await this.usersService.getUserById(+payload.sub);
-
+  async confirmEmail(user: User) {
     if (user.emailConfirmedAt) {
       throw new BadRequestException('Email already confirmed');
     }

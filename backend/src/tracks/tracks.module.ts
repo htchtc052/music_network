@@ -9,13 +9,14 @@ import { TracksService } from './tracks.service';
 import { TracksController } from './tracks.controller';
 import { FilesModule } from '../files/files.module';
 import { TracksRepository } from './tracksRepository';
-import { TokensModule } from '../tokens/tokens.module';
-import { TokensService } from '../tokens/tokens.service';
+import { UsersModule } from '../users/users.module';
+import { PagesService } from '../pages/pages.service';
+import { PagesRepository } from '../pages/pages.repository';
 
 @Module({
-  imports: [FilesModule, TokensModule],
+  imports: [FilesModule, UsersModule],
   controllers: [TracksController],
-  providers: [TracksService, TracksRepository, TokensService],
+  providers: [TracksService, TracksRepository, PagesService, PagesRepository],
 })
 export class TracksModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

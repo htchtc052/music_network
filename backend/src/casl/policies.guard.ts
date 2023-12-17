@@ -9,6 +9,7 @@ import { AbilityFactory, AppAbility } from './ability.factory';
 import { ContextIdFactory, ModuleRef, Reflector } from '@nestjs/core';
 import { IPolicyHandler } from './policies-handler.interface';
 import { CHECK_POLICIES_KEY } from './policies.decorator';
+import { RequestWithAuthUser } from '../auth/types/requestWithAuthData.type';
 
 @Injectable()
 export class PoliciesGuard implements CanActivate {
@@ -50,11 +51,9 @@ export class PoliciesGuard implements CanActivate {
       policyHandlers.push(policyHandler);
     }
 
-    const request = ctx.switchToHttp().getRequest<Request>();
+    const request = ctx.switchToHttp().getRequest<RequestWithAuthUser>();
 
-    const ability: AppAbility = this.abilityFactory.createForUser(
-      request['authUser'],
-    );
+    const ability: AppAbility = this.abilityFactory.createForUser(request.user);
 
     return policyHandlers.every((handler) => handler.handle(ability));
   }

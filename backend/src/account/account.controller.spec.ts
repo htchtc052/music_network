@@ -2,9 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { AccountController } from './account.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '../users/users.service';
-import { UserResponse } from '../users/dtos/userResponse';
-import { userMock } from '../users/mocks/users.mocks';
-import { editUserInfoDtoMock } from './mocks/account.mocks';
 
 describe('AccountController', () => {
   let app: INestApplication;
@@ -31,34 +28,5 @@ describe('AccountController', () => {
 
   it('should be defined', () => {
     expect(AccountController).toBeDefined();
-  });
-
-  describe('Account routes', () => {
-    it('Should edit user info', async () => {
-      const editedUserResponseMock: UserResponse = {
-        ...userMock,
-        ...editUserInfoDtoMock,
-      } as UserResponse;
-
-      mockUsersService.editUserInfo = jest
-        .fn()
-        .mockResolvedValue(editedUserResponseMock);
-
-      const editedUserResponse: UserResponse =
-        await accountController.editUserInfo(userMock, editUserInfoDtoMock);
-
-      expect(editedUserResponse).toEqual(editedUserResponseMock);
-    });
-
-    it('should delete a user', async () => {
-      mockUsersService.markUserDeleted = jest.fn().mockResolvedValue({
-        ...userMock,
-        deletedAt: new Date(),
-      });
-
-      const result: string = await accountController.softDeleteUser(userMock);
-
-      expect(result).toEqual(`User ${userMock.id} successfully deleted`);
-    });
   });
 });

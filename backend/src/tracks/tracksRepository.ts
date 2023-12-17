@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
-import { Track, TrackFile } from '@prisma/client';
+import { Page, Track, TrackFile } from '@prisma/client';
 import {
   TrackFileUncheckedCreateInput,
   TrackUncheckedCreateInput,
@@ -43,6 +43,22 @@ export class TracksRepository {
     });
 
     return tracks;
+  }
+
+  async getTracksByPage(
+    page: Page,
+    includePrivate: boolean,
+  ): Promise<TrackWithFile[]> {
+    const where: TrackWhereFilter = {
+      pageId: page.id,
+      deletedAt: null,
+    };
+
+    if (!includePrivate) {
+      where.private = false;
+    }
+
+    return this.getTracksByCriteria(where);
   }
 
   async getTrackById(id: number): Promise<TrackWithFile> {

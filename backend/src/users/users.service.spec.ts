@@ -2,13 +2,12 @@ import { UsersService } from './users.service';
 import { PrismaService } from 'nestjs-prisma';
 import { Test, TestingModule } from '@nestjs/testing';
 import { User } from '@prisma/client';
-import { RegisterDto } from '../auth/dto/register.dto';
-import { userMock } from './mocks/users.mocks';
-import { editUserInfoDtoMock } from '../account/mocks/account.mocks';
 import { UsersRepository } from './users.repository';
-import { TrackResponse } from '../tracks/dtos/track.response';
 import { UserResponse } from './dtos/userResponse';
 import { TokensService } from '../tokens/tokens.service';
+import { AbilityFactory } from '../casl/ability.factory';
+import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
+import { RegisterDto } from '../auth/dto/register.dto';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -18,6 +17,9 @@ describe('UsersService', () => {
 
   let mockUsersRepository: UsersRepository =
     jest.createMockFromModule<UsersRepository>('./users.repository');
+
+  let mockAbilityFactory: AbilityFactory =
+    jest.createMockFromModule<AbilityFactory>('../casl/ability.factory');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +34,7 @@ describe('UsersService', () => {
           provide: TokensService,
           useValue: mockTokensService,
         },
+        { provide: AbilityFactory, useValue: mockAbilityFactory },
       ],
     }).compile();
 
@@ -43,31 +46,39 @@ describe('UsersService', () => {
   });
 
   it('should create a new user', async () => {
-    mockUsersRepository.createUser = jest.fn().mockResolvedValue(userMock);
-    usersService.hashPassword = jest.fn().mockResolvedValue(userMock.password);
+    const user: User = {
+      id: 1,
+      email: 'user@test.com',
+      password: 'pwd_string',
+      username: 'user',
+    } as User;
 
-    const user: User = await usersService.createUser({
-      username: userMock.username,
-      email: userMock.email,
-      password: userMock.password,
+    mockUsersRepository.createUser = jest.fn().mockResolvedValue(user);
+    usersService.hashPassword = jest.fn().mockResolvedValue(user.password);
+
+    const createdUser: User = await usersService.createUser({
+      username: user.username,
+      email: user.email,
+      password: user.password,
     } as RegisterDto);
 
-    expect(user).toEqual(userMock);
-  });
-
-  it('should find user by id', async () => {
-    mockUsersRepository.getUserById = jest.fn().mockResolvedValue(userMock);
-
-    const user: User = await usersService.getUserById(userMock.id);
-
-    expect(user).toEqual(user);
+    expect(createdUser).toEqual(user);
   });
 
   describe('editUserInfo', () => {
     it('Should update user info', async () => {
+      const user: User = {
+        id: 1,
+        username: 'user',
+      } as User;
+
+      const editUserInfoDto: EditUserInfoDto = {
+        username: 'New user name',
+      } as EditUserInfoDto;
+
       const editedUserMock: User = {
-        ...userMock,
-        ...editUserInfoDtoMock,
+        ...user,
+        ...editUserInfoDto,
       } as User;
 
       mockUsersRepository.updateUser = jest
@@ -75,29 +86,31 @@ describe('UsersService', () => {
         .mockResolvedValue(editedUserMock);
 
       const editedUserResponse: UserResponse = await usersService.editUserInfo(
-        userMock,
-        editUserInfoDtoMock,
+        user,
+        editUserInfoDto,
       );
 
-      expect(editedUserResponse).toEqual(new TrackResponse(editedUserMock));
+      expect(editedUserResponse).toEqual(new UserResponse(editedUserMock));
     });
   });
 
   describe('deleteUser', () => {
     it('should mark user as deleted', async () => {
-      const deletedAt = { deletedAt: new Date() };
-      const deletedUserMock = { ...userMock, deletedAt };
+      const user: User = {
+        id: 1,
+        email: 'user@test.com',
+        password: 'pwd_string',
+        username: 'user',
+      } as User;
+
+      const deletedAt = new Date();
+      const deletedUserMock: User = { ...user, deletedAt } as User;
 
       mockUsersRepository.updateUser = jest
         .fn()
         .mockResolvedValue(deletedUserMock);
 
-      const deletedUser: User = await usersService.markUserDeleted(userMock.id);
-
-      expect(mockUsersRepository.updateUser).toHaveBeenCalledWith(
-        userMock.id,
-        deletedAt,
-      );
+      const deletedUser: User = await usersService.markUserDeleted(user.id);
 
       expect(deletedUser).toEqual(deletedUserMock);
     });

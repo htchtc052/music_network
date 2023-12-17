@@ -28,15 +28,31 @@ model User {
   deletedAt        DateTime?
   Token            Token[]
   Track            Track[]
+  Page             Page[]
 
   @@map(name: "users")
 }
 
+model Page {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  Track       Track[]
+
+  @@map(name: "pages")
+}
+
 model Token {
-  userId       Int
-  refreshToken String   @unique
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  token     String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map(name: "tokens")
 }
@@ -51,6 +67,8 @@ model Track {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   deletedAt         DateTime?
+  pageId            Int
+  page              Page       @relation(fields: [pageId], references: [id])
   userId            Int
   user              User       @relation(fields: [userId], references: [id])
   file              TrackFile?

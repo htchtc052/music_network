@@ -4,14 +4,9 @@ import { UsersService } from '../users/users.service';
 import { BadRequestException } from '@nestjs/common';
 import { TokensService } from '../tokens/tokens.service';
 import { AuthResponse } from './dto/authResponse';
-import { tokensResponseMock } from '../tokens/mocks/tokens.mocks';
-import { userMock } from '../users/mocks/users.mocks';
-import { EmailService } from '../email/email.service';
-import { TokensResponse } from '../tokens/dtos/tokensResponse';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtAuthorizationTokenDecoded } from '../tokens/types/JwtAuthorization.type';
 import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
+import { UsersRepository } from '../users/users.repository';
+import { User } from '@prisma/client';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -24,8 +19,8 @@ describe('AuthService', () => {
     '../tokens/tokens.service',
   );
 
-  const mockEmailService: EmailService = jest.createMockFromModule(
-    '../email/email.service',
+  const mockUsersRepository: UsersRepository = jest.createMockFromModule(
+    '../users/users.repository',
   );
 
   const mockEmailConfirmationService: EmailConfirmationService =
@@ -40,6 +35,10 @@ describe('AuthService', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: UsersRepository,
+          useValue: mockUsersRepository,
         },
         {
           provide: TokensService,
@@ -59,34 +58,40 @@ describe('AuthService', () => {
     expect(authService).toBeDefined();
   });
 
-  describe('Auth routes', () => {
-    const authResponseDtoMock = {
-      user: userMock,
-      ...tokensResponseMock,
+  describe('Auth methods', () => {
+    const user: User = {
+      id: 1,
+      email: 'test@mail.com',
+      password: 'pwd',
+      username: 'test',
+    } as User;
+
+    const accessToken = 'test_access_token';
+    const refreshToken = 'test_refresh_token';
+
+    const authResponseDtoMock: AuthResponse = {
+      user,
+      accessToken,
+      refreshToken,
     };
 
     it('should create new user', async () => {
-      mockUsersService.createUser = jest.fn().mockResolvedValueOnce(userMock);
+      mockUsersService.createUser = jest.fn().mockResolvedValueOnce(user);
 
-      authService.generateAndSaveTokens = jest
-        .fn()
-        .mockResolvedValue(tokensResponseMock);
+      authService.generateAndSaveTokens = jest.fn().mockResolvedValue({
+        accessToken,
+        refreshToken,
+      });
 
       mockEmailConfirmationService.sendEmailVerificationEmail = jest
         .fn()
         .mockImplementation(() => Promise.resolve());
 
-      const registerDto: RegisterDto = {
-        username: userMock.username,
-        email: userMock.email,
-        password: userMock.password,
-      };
-
-      const authResponse: AuthResponse = await authService.register(
-        registerDto,
-      );
-
-      expect(mockUsersService.createUser).toHaveBeenCalledWith(registerDto);
+      const authResponse: AuthResponse = await authService.register({
+        username: user.username,
+        email: user.email,
+        password: user.password,
+      });
 
       expect(authResponse).toEqual(authResponseDtoMock);
     });
@@ -95,8 +100,8 @@ describe('AuthService', () => {
       mockUsersService.getUserByEmail = jest
         .fn()
         .mockImplementation((checkEmail) => {
-          if (checkEmail == userMock.email) {
-            return userMock;
+          if (checkEmail == user.email) {
+            return user;
           } else {
             throw new BadRequestException('User does not exist');
           }
@@ -108,59 +113,26 @@ describe('AuthService', () => {
           return password1 === password2;
         });
 
-      authService.generateAndSaveTokens = jest
-        .fn()
-        .mockResolvedValue(tokensResponseMock);
+      authService.generateAndSaveTokens = jest.fn().mockResolvedValue({
+        accessToken,
+        refreshToken,
+      });
 
-      const loginDto: LoginDto = {
-        email: userMock.email,
-        password: userMock.password,
-      };
+      const authResponse: AuthResponse = await authService.login({
+        email: user.email,
+        password: user.password,
+      });
 
-      const authResponse: AuthResponse = await authService.login(loginDto);
-
-      expect(mockUsersService.getUserByEmail).toHaveBeenCalledWith(
-        userMock.email,
-      );
+      expect(mockUsersService.getUserByEmail).toHaveBeenCalledWith(user.email);
 
       expect(authService.validatePassword).toHaveBeenCalledWith(
-        userMock.password,
-        userMock.password,
+        user.password,
+        user.password,
       );
 
-      expect(authService.generateAndSaveTokens).toHaveBeenCalledWith(
-        userMock.id,
-      );
+      expect(authService.generateAndSaveTokens).toHaveBeenCalledWith(user.id);
 
       expect(authResponse).toEqual(authResponseDtoMock);
-    });
-
-    it('should refresh tokens', async () => {
-      mockTokensService.decodeJwtRefreshToken = jest.fn().mockResolvedValue({
-        sub: userMock.id.toString(),
-      } as JwtAuthorizationTokenDecoded);
-
-      mockUsersService.checkUserByRefreshToken = jest
-        .fn()
-        .mockResolvedValue(userMock);
-
-      mockUsersService.deleteUserRefreshToken = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve());
-
-      authService.generateAndSaveTokens = jest
-        .fn()
-        .mockResolvedValue(tokensResponseMock);
-
-      const tokensResponse: TokensResponse = await authService.refreshTokens(
-        tokensResponseMock.refreshToken,
-      );
-
-      expect(authService.generateAndSaveTokens).toHaveBeenCalledWith(
-        userMock.id,
-      );
-
-      expect(tokensResponse).toEqual(tokensResponseMock);
     });
   });
 });

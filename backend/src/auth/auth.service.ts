@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
-import { User } from '@prisma/client';
+import { Token, User } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TokensService } from '../tokens/tokens.service';
@@ -11,6 +15,8 @@ import { TokensResponse } from '../tokens/dtos/tokensResponse';
 import { UserResponse } from '../users/dtos/userResponse';
 import { JwtParams } from '../tokens/types/JwtParams.type';
 import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
+import { JwtPayload } from '../tokens/types/JwtPayload';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +24,7 @@ export class AuthService {
     private usersService: UsersService,
     private tokensService: TokensService,
     private emailConfirmationService: EmailConfirmationService,
+    private usersRepository: UsersRepository,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -63,40 +70,30 @@ export class AuthService {
     }
   }
 
-  async logout(refreshToken: string) {
-    if (!refreshToken) {
-      throw new BadRequestException('Token ID required');
-    }
-
-    const payload: JwtParams = await this.tokensService.decodeJwtRefreshToken(
-      refreshToken,
-    );
-
-    await this.usersService.deleteUserRefreshToken(+payload.sub, refreshToken);
-  }
-
-  async refreshTokens(refreshToken: string): Promise<TokensResponse> {
-    if (!refreshToken) {
-      throw new BadRequestException('Refresh token is required');
-    }
-
-    const payload: JwtParams = await this.tokensService.decodeJwtRefreshToken(
-      refreshToken,
-    );
-
-    const user: User = await this.usersService.checkUserByRefreshToken(
-      refreshToken,
-    );
+  async checkAuthUserRefreshToken(
+    payload: JwtPayload,
+    refreshToken: string,
+  ): Promise<User> {
+    const user: User = await this.checkUserByToken(refreshToken);
 
     if (!user || user.id != parseInt(payload.sub)) {
-      throw new BadRequestException('Refresh token not exists');
+      throw new UnauthorizedException('Refresh token not exists');
     }
 
-    await this.usersService.deleteUserRefreshToken(+payload.sub, refreshToken);
+    await this.deleteUserToken(+payload.sub, refreshToken);
+    return user;
+  }
 
-    const tokens: TokensResponse = await this.generateAndSaveTokens(user.id);
+  async checkUserByToken(token: string): Promise<User | null> {
+    const tokenData: Token = await this.usersRepository.getUserToken({
+      token,
+    });
 
-    return new TokensResponse(tokens);
+    if (!tokenData) {
+      return null;
+    }
+
+    return this.usersRepository.getUserById(tokenData.userId);
   }
 
   async generateAndSaveTokens(userId: number): Promise<TokensResponse> {
@@ -104,8 +101,25 @@ export class AuthService {
 
     const refreshToken = await this.tokensService.signRefreshToken(userId);
 
-    await this.usersService.saveUserRefreshToken(userId, refreshToken);
+    await this.usersRepository.createRefreshToken({
+      token: refreshToken,
+      userId,
+    });
 
     return { accessToken, refreshToken };
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestException('Token ID required');
+    }
+
+    const payload: JwtParams = {} as JwtPayload;
+
+    await this.deleteUserToken(+payload.sub, refreshToken);
+  }
+
+  async deleteUserToken(userId: number, token: string): Promise<void> {
+    await this.usersRepository.deleteUserToken({ userId, token });
   }
 }

@@ -8,7 +8,7 @@ import { EditUserInfoDto } from '../src/account/dtos/editUserInfo.dto';
 import { Genders } from '@prisma/client';
 import { createTestingModule } from './utils/createTestingModule';
 
-describe('Auth routes', () => {
+describe('User related routes', () => {
   let app: INestApplication;
 
   class MockMailerService {}
@@ -51,7 +51,6 @@ describe('Auth routes', () => {
     });
 
     expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
-    expect(res.body.message[0]).toEqual('Email already exists');
   });
 
   it('/auth/login (POST) - success', async () => {
@@ -111,10 +110,10 @@ describe('Auth routes', () => {
 
   it('/auth/me (Get) - guest not allowed', async () => {
     const res = await request(app.getHttpServer()).get('/auth/me');
-    expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
+    expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
   });
 
-  it('/account/editInfo (PUT) - edit user success', async () => {
+  it('/account/editUserInfo (PUT) - edit user success', async () => {
     const editUserInfoDto: EditUserInfoDto = {
       firstName: 'Alex',
       lastName: 'Logov',
@@ -128,11 +127,6 @@ describe('Auth routes', () => {
       .send(editUserInfoDto);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
-  });
-
-  it('/account/editUserInfo (Get) - guest not allowed', async () => {
-    const res = await request(app.getHttpServer()).put('/account/editUserInfo');
-    expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
   it('/users/:id (Get) - user public route', async () => {

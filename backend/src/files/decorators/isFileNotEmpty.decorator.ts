@@ -9,7 +9,6 @@ export function IsFileNotEmpty(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: any) {
-          console.debug(value);
           return (
             value !== null &&
             value !== undefined &&

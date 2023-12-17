@@ -1,15 +1,20 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 
 import { NextFunction, Response } from 'express';
-import RequestWithTrack from '../interfaces/requestWithTrack.interface';
 import { TracksService } from '../tracks.service';
+import { RequestWithTrack } from '../types/requestWithTrack.type';
+import { TrackWithFile } from '../types/track.types';
 
 @Injectable()
 export class GetTrackMiddleware implements NestMiddleware {
   constructor(private readonly tracksService: TracksService) {}
 
   async use(req: RequestWithTrack, res: Response, next: NextFunction) {
-    req.track = await this.tracksService.getTrackById(parseInt(req.params.id));
+    const track: TrackWithFile = await this.tracksService.getTrackById(
+      parseInt(req.params.id),
+    );
+
+    req.track = track;
     next();
   }
 }

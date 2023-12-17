@@ -31,6 +31,10 @@ export class UserResponse {
   @Expose()
   createdAt: Date;
 
+  @ApiProperty()
+  @Expose()
+  emailConfirmedAt: Date;
+
   @Exclude()
   password: string;
 

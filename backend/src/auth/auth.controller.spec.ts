@@ -4,12 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './dto/authResponse';
-import { userMock } from '../users/mocks/users.mocks';
-import {
-  refreshTokenMock,
-  tokensResponseMock,
-} from '../tokens/mocks/tokens.mocks';
-import { TokensResponse } from '../tokens/dtos/tokensResponse';
+import { User } from '@prisma/client';
 
 describe('AuthController', () => {
   let app: INestApplication;
@@ -37,18 +32,29 @@ describe('AuthController', () => {
     expect(authController).toBeDefined();
   });
 
-  const authResponseMock = {
-    user: userMock,
-    ...tokensResponseMock,
+  const user: User = {
+    id: 1,
+    email: 'test@mail.com',
+    password: 'pwd',
+    username: 'test',
+  } as User;
+
+  const accessToken = 'test_access_token';
+  const refreshToken = 'test_refresh_token';
+
+  const authResponseMock: AuthResponse = {
+    user,
+    accessToken,
+    refreshToken,
   };
 
   it('should register user', async () => {
     mockAuthService.register = jest.fn().mockResolvedValue(authResponseMock);
 
     const authResponse: AuthResponse = await authController.register({
-      username: userMock.username,
-      email: userMock.email,
-      password: userMock.password,
+      username: user.username,
+      email: user.email,
+      password: user.password,
     });
 
     expect(authResponse).toEqual(authResponseMock);
@@ -59,8 +65,8 @@ describe('AuthController', () => {
       .fn()
       .mockImplementation((loginDto: LoginDto) => {
         if (
-          loginDto.email == userMock.email &&
-          loginDto.password == userMock.password
+          loginDto.email == user.email &&
+          loginDto.password == user.password
         ) {
           return authResponseMock;
         } else {
@@ -70,8 +76,8 @@ describe('AuthController', () => {
 
     it('should login user with valid credentials', async () => {
       const authResponse: AuthResponse = await authController.login({
-        email: userMock.email,
-        password: userMock.password,
+        email: user.email,
+        password: user.password,
       });
 
       expect(authResponse).toEqual(authResponseMock);
@@ -84,18 +90,6 @@ describe('AuthController', () => {
           password: 'invalid password',
         }),
       ).toThrow(BadRequestException);
-    });
-
-    it('should refresh tokens', async () => {
-      mockAuthService.refreshTokens = jest
-        .fn()
-        .mockResolvedValue(tokensResponseMock);
-
-      const tokensResponse: TokensResponse = await authController.refreshTokens(
-        { refreshToken: refreshTokenMock },
-      );
-
-      expect(tokensResponse).toEqual(tokensResponseMock);
     });
   });
 });

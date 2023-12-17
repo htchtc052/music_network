@@ -1,13 +1,13 @@
 import { Provider } from '@nestjs/common';
 import { ReadTrackHandler } from './readTrack.handler';
 import { REQUEST } from '@nestjs/core';
-import RequestWithTrackInterface from '../../tracks/interfaces/requestWithTrack.interface';
 import { Track } from '@prisma/client';
+import { RequestWithTrack } from '../../tracks/types/requestWithTrack.type';
 
 export const ReadTrackProvider: Provider = {
   provide: ReadTrackHandler,
   inject: [REQUEST],
-  useFactory: (request: RequestWithTrackInterface) => {
+  useFactory: (request: RequestWithTrack) => {
     const track: Track = request.track;
     return new ReadTrackHandler(track);
   },

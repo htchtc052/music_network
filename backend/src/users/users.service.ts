@@ -1,17 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as argon2 from 'argon2';
-import { Token, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { EditUserInfoDto } from '../account/dtos/editUserInfo.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { UsersRepository } from './users.repository';
 import { UserResponse } from './dtos/userResponse';
-import { TokensService } from '../tokens/tokens.service';
+import { AbilityFactory, Action, AppAbility } from '../casl/ability.factory';
+import { subject } from '@casl/ability';
 
 @Injectable()
 export class UsersService {
   constructor(
     private usersRepository: UsersRepository,
-    private tokensService: TokensService,
+    private abilityFactory: AbilityFactory,
   ) {}
 
   async createUser(registerDto: RegisterDto): Promise<User> {
@@ -76,27 +77,8 @@ export class UsersService {
     });
   }
 
-  async saveUserRefreshToken(
-    userId: number,
-    refreshToken: string,
-  ): Promise<void> {
-    await this.usersRepository.createRefreshToken({
-      refreshToken,
-      userId,
-    });
-  }
-
-  async checkUserByRefreshToken(refreshToken: string): Promise<User> {
-    const token: Token = await this.usersRepository.getUserToken({
-      refreshToken,
-    });
-
-    const user: User = await this.usersRepository.getUserById(token.userId);
-
-    return user;
-  }
-
-  deleteUserRefreshToken(userId: number, refreshToken: string) {
-    return this.usersRepository.deleteUserToken({ userId, refreshToken });
+  canReadPrivateData(ownerUser: User, guestUser: User): boolean {
+    const ability: AppAbility = this.abilityFactory.createForUser(guestUser);
+    return ability.can(Action.ReadPrivateData, subject('User', ownerUser));
   }
 }

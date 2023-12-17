@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
 import { classToPlain } from 'class-transformer';
-import { Action, AppAbility } from '../../casl/ability.factory';
-import { subject } from '@casl/ability';
-import { RequestWithAuthUser } from '../../users/types/requestsWithUsers.type';
 import { SerializerInterceptor } from '../../commons/serializerInterceptor';
+import { RequestWithTrack } from '../types/requestWithTrack.type';
+import { Track } from '@prisma/client';
+import { subject } from '@casl/ability';
+import { AbilityFactory, Action, AppAbility } from '../../casl/ability.factory';
 
 export interface Response<T> {
   data: T;
@@ -20,29 +21,34 @@ export class TransformTrackInterceptor<T>
   extends SerializerInterceptor
   implements NestInterceptor<T, Response<T>>
 {
+  constructor(private readonly abilityFactory: AbilityFactory) {
+    super();
+  }
+
   intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
-    const request: RequestWithAuthUser = context
-      .switchToHttp()
-      .getRequest<RequestWithAuthUser>();
-    const ability: AppAbility = request.authUserAbility;
+    const req = context.switchToHttp().getRequest<RequestWithTrack>();
+    const ability: AppAbility = this.abilityFactory.createForUser(req.user);
 
     return next.handle().pipe(
       map((data) => {
         //in case there is TrackEntity[]
         if (Array.isArray(data)) {
-          data = data.map((track) => {
+          data = data.map((track: Track) => {
             const isOwner = ability.can(
-              Action.IsOwner,
+              Action.ReadPrivateData,
               subject('Track', track),
             );
 
             return classToPlain(track, { groups: [isOwner ? 'isOwner' : ''] });
           });
         } else {
-          const isOwner = ability.can(Action.IsOwner, subject('Track', data));
+          const isOwner = ability.can(
+            Action.ReadPrivateData,
+            subject('Track', data),
+          );
 
           data = classToPlain(data, { groups: [isOwner ? 'isOwner' : ''] });
         }

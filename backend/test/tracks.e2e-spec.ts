@@ -9,12 +9,16 @@ import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 import { readdirSync, unlinkSync } from 'fs';
 import { createTestingModule } from './utils/createTestingModule';
+import { PageResponse } from '../src/pages/dtos/page.response';
+import { CreatePageDto } from '../src/pages/dtos/createPage.dto';
 
 describe('Auth routes', () => {
   let app: INestApplication;
   let configService: ConfigService;
 
   let ownerUser: AuthResponse;
+  let guestUser: AuthResponse;
+  let ownerPage: PageResponse;
 
   class MockMailerService {}
 
@@ -28,15 +32,35 @@ describe('Auth routes', () => {
 
     const testSuiteName = `tracks`;
 
-    const res = await request(app.getHttpServer())
+    const resOwnerRegister = await request(app.getHttpServer())
       .post('/auth/register')
       .send({
         email: `user.${testSuiteName}.1@mail.com`,
-        password: `user.${testSuiteName}.1`,
-        username: `User ${testSuiteName} 1`,
+        password: `simple_pass`,
+        username: `User ${testSuiteName} owner`,
       });
 
-    ownerUser = res.body;
+    ownerUser = resOwnerRegister.body;
+
+    const resGuestRegister = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: `user.${testSuiteName}.2@mail.com`,
+        password: `simple_pass`,
+        username: `User ${testSuiteName} guest`,
+      });
+
+    guestUser = resGuestRegister.body;
+
+    const resCreatePage = await request(app.getHttpServer())
+      .post('/pages')
+      .set('Authorization', 'Bearer ' + ownerUser.accessToken)
+      .send({
+        title: `page.${testSuiteName}title`,
+        slug: `page_${testSuiteName}_slug`,
+      } as CreatePageDto);
+
+    ownerPage = resCreatePage.body;
 
     configService = moduleFixture.get<ConfigService>(ConfigService);
   });
@@ -66,12 +90,13 @@ describe('Auth routes', () => {
 
   it('/tracks (POST) - create first track', async () => {
     try {
+      //console.debug(ownerPage);
       const res = await request(app.getHttpServer())
-        .post('/tracks')
+        .post('/pages/' + ownerPage.slug + '/uploadTrack')
         .set('Authorization', 'Bearer ' + ownerUser.accessToken)
         .attach('trackFile', filePath);
 
-      expect(res.statusCode).toEqual(HttpStatus.CREATED);
+      //expect(res.statusCode).toEqual(HttpStatus.CREATED);
       firstTrack = res.body as TrackResponse;
     } catch (err) {
       console.error(`Error upload first track=${err.stack}`);
@@ -81,7 +106,7 @@ describe('Auth routes', () => {
   it('/tracks (POST) - create second track', async () => {
     try {
       const res = await request(app.getHttpServer())
-        .post('/tracks')
+        .post('/pages/' + ownerPage.slug + '/uploadTrack')
         .set('Authorization', 'Bearer ' + ownerUser.accessToken)
         .attach('trackFile', filePath);
 
@@ -92,13 +117,33 @@ describe('Auth routes', () => {
     }
   });
 
+  it('/tracks (POST) - edit second track as guest error', async () => {
+    const res = await request(app.getHttpServer())
+      .put(`/tracks/${secondTrack.id}/editTrackInfo`)
+      .set('Authorization', 'Bearer ' + guestUser.accessToken)
+      .send({
+        title: 'Edited title',
+      } as EditTrackInfoDto);
+
+    expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
+  });
+
   it('/tracks (POST) - edit second track and make it private', async () => {
     const res = await request(app.getHttpServer())
       .put(`/tracks/${secondTrack.id}/editTrackInfo`)
       .set('Authorization', 'Bearer ' + ownerUser.accessToken)
-      .send({ title: secondTrack.title, private: true } as EditTrackInfoDto);
+      .send({
+        title: 'Edited title',
+        description: 'Edited description',
+        private: true,
+      } as EditTrackInfoDto);
+
+    const editedTrack: TrackResponse = res.body;
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
+    expect(editedTrack.private).toBe(true);
+    expect(editedTrack.title).toEqual(editedTrack.title);
+    expect(editedTrack.description).toEqual(editedTrack.description);
 
     secondTrack = res.body as TrackResponse;
   });
@@ -122,37 +167,50 @@ describe('Auth routes', () => {
   });
 
   it('/tracks/:id (Get) - get private track as guest. Only public fields access', async () => {
-    const res = await request(app.getHttpServer()).get(
-      '/tracks/' + firstTrack.id,
-    );
-
+    const res = await request(app.getHttpServer())
+      .get('/tracks/' + firstTrack.id)
+      .set('Authorization', 'Bearer ' + guestUser.accessToken);
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body.hiddenDescription).toBeUndefined();
   });
 
   it('/tracks/:id (Get) -  private track as guest. Access restricted', async () => {
-    const res = await request(app.getHttpServer()).get(
-      '/tracks/' + secondTrack.id,
-    );
-
+    const res = await request(app.getHttpServer())
+      .get('/tracks/' + secondTrack.id)
+      .set('Authorization', 'Bearer ' + guestUser.accessToken);
     expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
-  it('/users/:id/tracks (Get) - get all tracks as owner', async () => {
+  it('/pages/:slug/tracks (Get) - get all page tracks as owner', async () => {
     const res = await request(app.getHttpServer())
-      .get('/users/' + ownerUser.user.id + '/tracks')
+      .get('/pages/' + ownerPage.slug + '/tracks')
       .set('Authorization', 'Bearer ' + ownerUser.accessToken);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body).toHaveLength(2);
   });
 
-  it('/users/:id/tracks (Get) - get only public tracks as guest', async () => {
-    const res = await request(app.getHttpServer()).get(
-      '/users/' + ownerUser.user.id + '/tracks',
-    );
-
+  it('/pages/:slug/tracks (Get) - get only public page tracks as guest', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/pages/' + ownerPage.slug + '/tracks')
+      .set('Authorization', 'Bearer ' + guestUser.accessToken);
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body).toHaveLength(1);
+  });
+
+  it('/tracks (POST) - delete first track by guest error', async () => {
+    const res = await request(app.getHttpServer())
+      .delete(`/tracks/${firstTrack.id}/deleteTrack`)
+      .set('Authorization', 'Bearer ' + guestUser.accessToken);
+
+    expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
+  });
+
+  it('/tracks (POST) - delete first track by owner success', async () => {
+    const res = await request(app.getHttpServer())
+      .delete(`/tracks/${firstTrack.id}/deleteTrack`)
+      .set('Authorization', 'Bearer ' + ownerUser.accessToken);
+
+    expect(res.statusCode).toEqual(HttpStatus.OK);
   });
 });

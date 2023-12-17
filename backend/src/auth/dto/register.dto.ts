@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, Validate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmailAlreadyExists } from '../../users/validators/is-email-already-exists.service';
+import { IsEmailAlreadyExists } from '../../users/validators/isEmailAlreadyExists.validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'john_doe', description: 'User name' })

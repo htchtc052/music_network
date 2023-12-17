@@ -1,7 +1,3 @@
-import { userMock } from '../users/mocks/users.mocks';
-import { JwtParams } from '../tokens/types/JwtParams.type';
-import { emailVerificationTokenMock } from '../tokens/mocks/tokens.mocks';
-import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../users/users.service';
 import { TokensService } from '../tokens/tokens.service';
 import { EmailService } from '../email/email.service';
@@ -49,27 +45,5 @@ describe('AuthService', () => {
 
   it('should be defined', () => {
     expect(emailConfirmationService).toBeDefined();
-  });
-
-  it('should confirm email by email verification token', async () => {
-    mockTokensService.decodeJwtEmailVerificationToken = jest
-      .fn()
-      .mockResolvedValue({
-        sub: userMock.id.toString(),
-      } as JwtParams);
-
-    mockUsersService.getUserById = jest.fn().mockResolvedValue(userMock);
-
-    mockUsersService.markEmailAsConfirmed = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve());
-
-    await emailConfirmationService.confirmEmail(emailVerificationTokenMock);
-
-    expect(mockUsersService.getUserById).toHaveBeenCalledWith(userMock.id);
-
-    expect(mockUsersService.markEmailAsConfirmed).toHaveBeenCalledWith(
-      userMock.id,
-    );
   });
 });

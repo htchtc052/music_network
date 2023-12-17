@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { EditUserInfoDto } from './dtos/editUserInfo.dto';
-import { AuthUser } from '../auth/decorators/authUser.decorator';
 import { User } from '@prisma/client';
 import { UserResponse } from '../users/dtos/userResponse';
 import { SerializerInterceptor } from '../commons/serializerInterceptor';
+import { AuthUser } from '../auth/decorators/authUser.decorator';
 
 @Controller('account')
 export class AccountController {
@@ -24,18 +24,17 @@ export class AccountController {
   @Put('editUserInfo')
   @UseInterceptors(SerializerInterceptor)
   editUserInfo(
-    @AuthUser() authUser: User,
+    @AuthUser() user: User,
     @Body() editUserInfoDto: EditUserInfoDto,
   ): Promise<UserResponse> {
-    return this.usersService.editUserInfo(authUser, editUserInfoDto);
+    return this.usersService.editUserInfo(user, editUserInfoDto);
   }
 
   @ApiOperation({ summary: 'Delete user' })
+  @HttpCode(HttpStatus.OK)
   @Delete('deleteUser')
-  async softDeleteUser(@AuthUser() authUser: User): Promise<string> {
-    const deletedUser: User = await this.usersService.markUserDeleted(
-      authUser.id,
-    );
+  async softDeleteUser(@AuthUser() user: User): Promise<string> {
+    const deletedUser: User = await this.usersService.markUserDeleted(user.id);
     return `User ${deletedUser.id} successfully deleted`;
   }
 }

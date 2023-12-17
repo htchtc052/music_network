@@ -1,33 +1,30 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 
 import { EmailConfirmationService } from './email-confirmation.service';
 import { Public } from '../auth/decorators/public.decorator';
-import { ConfirmEmailDto } from './dtos/confirmEmail.dto';
-import { AuthUser } from '../auth/decorators/authUser.decorator';
 import { User } from '@prisma/client';
+import { AuthUser } from '../auth/decorators/authUser.decorator';
+import { EmailConfirmationTokenGuard } from '../auth/guards/emailConfirmationTokenGuard';
 
 @Controller('email-confirmation')
 export class EmailConfirmationController {
   constructor(private emailConfirmationService: EmailConfirmationService) {}
 
   @ApiOperation({ summary: 'Resend email confirmation link' })
-  @HttpCode(HttpStatus.OK)
   @Post('resendEmailConfirmation')
-  async resendConfirmationLink(@AuthUser() authUser: User) {
-    await this.emailConfirmationService.resendEmailConfirmationLink(authUser);
+  async resendConfirmationLink(@AuthUser() user: User) {
+    await this.emailConfirmationService.resendEmailConfirmationLink(user);
 
     return `Link sended`;
   }
 
   @ApiOperation({ summary: 'Confirm email' })
   @Public()
-  @HttpCode(HttpStatus.OK)
+  @UseGuards(EmailConfirmationTokenGuard)
   @Post('confirmEmail')
-  async ConfirmEmail(
-    @Body() confirmEmailDto: ConfirmEmailDto,
-  ): Promise<string> {
-    await this.emailConfirmationService.confirmEmail(confirmEmailDto.token);
+  async ConfirmEmail(@AuthUser() user: User): Promise<string> {
+    await this.emailConfirmationService.confirmEmail(user);
     return 'Email confirm success';
   }
 }

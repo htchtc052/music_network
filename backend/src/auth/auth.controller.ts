@@ -5,28 +5,30 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { Public } from './decorators/public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthUser } from './decorators/authUser.decorator';
 import { User } from '@prisma/client';
 import { AuthResponse } from './dto/authResponse';
 import { UserResponse } from '../users/dtos/userResponse';
 import { SerializerInterceptor } from '../commons/serializerInterceptor';
 import { TokensResponse } from '../tokens/dtos/tokensResponse';
-import { RefreshTokensDto } from './dto/refreshTokens.dto';
+import { AuthUser } from './decorators/authUser.decorator';
+import { Public } from './decorators/public.decorator';
+import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { LogoutDto } from './dto/logout.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: 'Create user' })
-  @Public()
   @HttpCode(HttpStatus.CREATED)
+  @Public()
   @Post('register')
   @UseInterceptors(SerializerInterceptor)
   register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
@@ -35,8 +37,8 @@ export class AuthController {
 
   //
   @ApiOperation({ summary: 'Sign in user' })
-  @Public()
   @HttpCode(HttpStatus.OK)
+  @Public()
   @Post('login')
   @UseInterceptors(SerializerInterceptor)
   login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
@@ -44,20 +46,29 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Refresh token' })
-  @Public()
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RefreshTokenGuard)
+  @Public()
   @Post('refreshTokens')
-  refreshTokens(
-    @Body() refreshTokensDto: RefreshTokensDto,
-  ): Promise<TokensResponse> {
-    return this.authService.refreshTokens(refreshTokensDto.refreshToken);
+  @UseInterceptors(SerializerInterceptor)
+  refreshTokens(@AuthUser() user: User): Promise<TokensResponse> {
+    return this.authService.generateAndSaveTokens(user.id);
   }
 
-  @ApiOperation({ summary: 'Get own user' })
+  @ApiOperation({ summary: 'Get auth user' })
   @HttpCode(HttpStatus.OK)
   @Get('/me')
   @UseInterceptors(SerializerInterceptor)
-  async getUser(@AuthUser() authUser: User): Promise<UserResponse> {
-    return new UserResponse(authUser);
+  async getUser(@AuthUser() user: User): Promise<UserResponse> {
+    return new UserResponse(user);
+  }
+
+  @ApiOperation({ summary: 'Logout user' })
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  @Post('logout')
+  async logout(@Body() logoutDto: LogoutDto): Promise<string> {
+    await this.authService.logout(logoutDto.refreshToken);
+    return 'User logout';
   }
 }

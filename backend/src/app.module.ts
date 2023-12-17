@@ -5,14 +5,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from 'nestjs-prisma';
 import * as Joi from 'joi';
 import * as process from 'process';
-import { CaslModule } from './casl/casl.module';
 import { AccountModule } from './account/account.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './auth/guards/jwtAuthGuard';
 import { TokensModule } from './tokens/tokens.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AccessTokenGuard } from './auth/guards/accessTokenGuard';
+import { CaslModule } from './casl/casl.module';
+import { UsersProfileModule } from './users-profile/usersProfile.module';
+import { PagesModule } from './pages/pages.module';
+import { TracksModule } from './tracks/tracks.module';
 
 @Module({
   imports: [
@@ -20,7 +23,10 @@ import { TokensModule } from './tokens/tokens.module';
     CaslModule,
     AccountModule,
     UsersModule,
+    UsersProfileModule,
+    PagesModule,
     AuthModule,
+    TracksModule,
     TokensModule,
     ConfigModule.forRoot({
       envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
@@ -32,7 +38,7 @@ import { TokensModule } from './tokens/tokens.module';
         UPLOADS_DIR: Joi.string().required(),
         JWT_ACCESS_SECRET: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),
-        JWT_EMAIL_VERIFICATION_SECRET: Joi.string().required(),
+        JWT_EMAIL_CONFIRMATION_SECRET: Joi.string().required(),
         SMTP_HOST: Joi.string(),
         SMTP_PORT: Joi.number(),
         SMTP_USER: Joi.string(),
@@ -77,7 +83,7 @@ import { TokensModule } from './tokens/tokens.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: AccessTokenGuard,
     },
   ],
 })

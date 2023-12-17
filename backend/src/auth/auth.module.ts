@@ -10,6 +10,9 @@ import { EmailConfirmationModule } from '../email-confirmation/email-confirmatio
 import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
 import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
+import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
+import { AccessTokenStrategy } from './strategies/accessToken.strategy';
+import { EmailConfirmationTokenStrategy } from './strategies/emailConfirmationToken.strategy';
 
 @Module({
   imports: [UsersModule, TokensModule, EmailModule, EmailConfirmationModule],
@@ -21,6 +24,9 @@ import { EmailService } from '../email/email.service';
     UsersRepository,
     EmailService,
     EmailConfirmationService,
+    AccessTokenStrategy,
+    RefreshTokenStrategy,
+    EmailConfirmationTokenStrategy,
   ],
 })
 export class AuthModule {}
