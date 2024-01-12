@@ -37,7 +37,7 @@ export class TokensService {
       options = {
         ...options,
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: '5m',
+        expiresIn: '60s',
       };
     } else if (scope === TOKEN_SCOPES.REFRESH_SCOPE) {
       options = {
@@ -52,7 +52,7 @@ export class TokensService {
         expiresIn: '1h',
       };
     }
- 
+
     return this.jwtService.signAsync({ sid: uuidv4() }, options);
   }
 }

@@ -72,6 +72,18 @@ describe('Auth routes', () => {
     expect(res.statusCode).toEqual(HttpStatus.CREATED);
   });
 
+  it('/pages (POST) - create  page with invalid slug error', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/pages')
+      .set('Authorization', 'Bearer ' + ownerUser.accessToken)
+      .send({
+        slug: 'Invalid slug@',
+        title: 'any title',
+      });
+
+    expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+  });
+
   it('/pages (POST) - create  page with exists slug error', async () => {
     const res = await request(app.getHttpServer())
       .post('/pages')
@@ -125,6 +137,14 @@ describe('Auth routes', () => {
     const res = await request(app.getHttpServer()).get(
       '/users/' + ownerUser.user.id + '/pages',
     );
+    expect(res.statusCode).toEqual(HttpStatus.OK);
+    expect(res.body).toHaveLength(1);
+  });
+
+  it('/users/:id/pages (Get) - get own user pages', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/account/pages')
+      .set('Authorization', 'Bearer ' + ownerUser.accessToken);
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body).toHaveLength(1);
   });

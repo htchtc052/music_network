@@ -20,7 +20,6 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { PagesService } from './pages.service';
-import { CreatePageDto } from './dtos/createPage.dto';
 import { PageResponse } from './dtos/page.response';
 import { EditPageInfoDto } from './dtos/editPageInfo.dto';
 import { CurrentPage } from './decorators/currentPage.decorator';
@@ -37,22 +36,11 @@ export class PagesController {
     private tracksService: TracksService,
   ) {}
 
-  @ApiOperation({ summary: 'Create page' })
-  @HttpCode(HttpStatus.CREATED)
-  @Post()
-  @UseInterceptors(SerializerInterceptor)
-  createPage(
-    @AuthUser() authUser: User,
-    @Body() createPageDto: CreatePageDto,
-  ): Promise<PageResponse> {
-    return this.pagesService.createPage(authUser, createPageDto);
-  }
-
   @ApiOperation({ summary: 'Get page by slug' })
   @HttpCode(HttpStatus.OK)
   @Public()
   @Get(':slug')
-  getTrack(@CurrentPage() page: Page): PageResponse {
+  getPage(@CurrentPage() page: Page): PageResponse {
     return new PageResponse(page);
   }
 

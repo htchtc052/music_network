@@ -18,6 +18,3 @@ RUN npx prisma generate
 
 # Собираем приложение
 RUN npm run build
-
-# Порт, который будет открыт для внешнего доступа
-EXPOSE 3000

@@ -1,0 +1,22 @@
+{
+  "home_title": "Home title",
+  "home_link": "Home",
+  "about_title": "About title",
+  "about_link": "About",
+  "pages": {
+    "register":{
+      "meta":{
+        "title":"Registration",
+        "description":"Registration page"
+      },
+      "title":"Registration"
+    },
+    "login":{
+      "meta":{
+        "title":"Authorization",
+        "description":"Auth page"
+      },
+      "title":"Authorization"
+    }
+  }
+}

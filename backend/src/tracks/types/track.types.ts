@@ -4,8 +4,6 @@ export type TrackWithFile = Prisma.TrackGetPayload<{
   include: { file: true };
 }>;
 
-export type TrackOnly = Prisma.TrackGetPayload<{}>;
-
 export type TrackWhereFilter = Prisma.TrackWhereInput;
 
 export type TrackUpdateInput = Partial<Track>;

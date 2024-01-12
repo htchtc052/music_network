@@ -21,6 +21,7 @@ import { AuthUser } from './decorators/authUser.decorator';
 import { Public } from './decorators/public.decorator';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { LogoutDto } from './dto/logout.dto';
+import { Guest } from './decorators/guest.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -28,7 +29,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Create user' })
   @HttpCode(HttpStatus.CREATED)
-  @Public()
+  @Guest()
   @Post('register')
   @UseInterceptors(SerializerInterceptor)
   register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
@@ -38,7 +39,7 @@ export class AuthController {
   //
   @ApiOperation({ summary: 'Sign in user' })
   @HttpCode(HttpStatus.OK)
-  @Public()
+  @Guest()
   @Post('login')
   @UseInterceptors(SerializerInterceptor)
   login(@Body() loginDto: LoginDto): Promise<AuthResponse> {

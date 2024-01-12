@@ -41,16 +41,6 @@ export class UsersService {
     return user;
   }
 
-  async getUserByEmail(email: string): Promise<User> {
-    const user: User = await this.usersRepository.getUserByEmail(email);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
-  }
-
   async checkEmailExists(email: string): Promise<boolean> {
     return !(await this.usersRepository.getUsersCountByEmail(email));
   }

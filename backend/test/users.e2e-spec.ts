@@ -68,7 +68,7 @@ describe('User related routes', () => {
       password: 'any_password',
     });
 
-    expect(res.statusCode).toEqual(HttpStatus.NOT_FOUND);
+    expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
   });
 
   it('/auth/login (POST) - wrong password', async () => {
@@ -78,6 +78,18 @@ describe('User related routes', () => {
     });
 
     expect(res.statusCode).toEqual(HttpStatus.BAD_REQUEST);
+  });
+
+  it('/auth/login (POST) - with auth error', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: authUserData.email,
+        password: 'wrong_password',
+      })
+      .set('Authorization', 'Bearer ' + authUser.accessToken);
+
+    expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
   it('/auth/refreshToken (POST) - success', async () => {
@@ -127,6 +139,23 @@ describe('User related routes', () => {
       .send(editUserInfoDto);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
+  });
+
+  it('/account/editUserInfo (PUT) - with no auth error', async () => {
+    const res = await request(app.getHttpServer())
+      .put('/account/editUserInfo')
+      .set('Authorization', 'Bearer wrong token')
+      .send({ title: 'Edited title' });
+
+    expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
+  });
+
+  it('/account/editUserInfo (PUT) - with wrong auth error', async () => {
+    const res = await request(app.getHttpServer())
+      .put('/account/editUserInfo')
+      .send({ title: 'Edited title' });
+
+    expect(res.statusCode).toEqual(HttpStatus.UNAUTHORIZED);
   });
 
   it('/users/:id (Get) - user public route', async () => {

@@ -1,20 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Validate } from 'class-validator';
+import { IsNotEmpty, IsOptional, Validate } from 'class-validator';
 
 import { IsPageSlugAlreadyExists } from '../validators/IsPageSlugAlreadyExists';
-import { IsSlug } from '../../commons/isSlug.validator';
+import { IsSlugValid } from '../../commons/isSlugValid.validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreatePageDto {
   @ApiProperty({ example: 'page title', description: 'Page title' })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({
+    message: i18nValidationMessage('validation.PAGE_TITLE_NOT_EMPTY'),
+  })
   title: string;
 
   @ApiProperty({ example: 'my_page', description: 'Page slug' })
-  @IsNotEmpty()
-  @IsString()
-  @Validate(IsSlug, { message: 'Page slug invalid format' })
-  @Validate(IsPageSlugAlreadyExists, { message: 'Page slug already exists' })
+  @IsNotEmpty({
+    message: i18nValidationMessage('validation.PAGE_SLUG_NOT_EMPTY'),
+  })
+  @Validate(IsSlugValid, {
+    message: i18nValidationMessage('validation.PAGE_SLUG_INVALID'),
+  })
+  @Validate(IsPageSlugAlreadyExists, {
+    message: i18nValidationMessage('validation.PAGE_SLUG_BUSY'),
+  })
   slug: string;
 
   @ApiProperty({ example: 'My awesome page', description: 'Page description' })

@@ -8,11 +8,20 @@ import { TokensModule } from '../tokens/tokens.module';
 import { TokensService } from '../tokens/tokens.service';
 import { UsersRepository } from '../users/users.repository';
 import { EmailModule } from '../email/email.module';
+import { PagesModule } from '../pages/pages.module';
+import { PagesService } from '../pages/pages.service';
+import { PagesRepository } from '../pages/pages.repository';
 
 @Module({
-  imports: [UsersModule, AuthModule, TokensModule, EmailModule],
+  imports: [UsersModule, AuthModule, TokensModule, EmailModule, PagesModule],
   controllers: [AccountController],
 
-  providers: [UsersService, TokensService, UsersRepository],
+  providers: [
+    UsersService,
+    TokensService,
+    UsersRepository,
+    PagesService,
+    PagesRepository,
+  ],
 })
 export class AccountModule {}

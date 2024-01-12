@@ -97,7 +97,7 @@ describe('AuthService', () => {
     });
 
     it('should login user with valid credentials', async () => {
-      mockUsersService.getUserByEmail = jest
+      mockUsersRepository.getUserByEmail = jest
         .fn()
         .mockImplementation((checkEmail) => {
           if (checkEmail == user.email) {
@@ -123,7 +123,9 @@ describe('AuthService', () => {
         password: user.password,
       });
 
-      expect(mockUsersService.getUserByEmail).toHaveBeenCalledWith(user.email);
+      expect(mockUsersRepository.getUserByEmail).toHaveBeenCalledWith(
+        user.email,
+      );
 
       expect(authService.validatePassword).toHaveBeenCalledWith(
         user.password,

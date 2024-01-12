@@ -13,7 +13,6 @@ import { TokensService } from '../tokens/tokens.service';
 import { AuthResponse } from './dto/authResponse';
 import { TokensResponse } from '../tokens/dtos/tokensResponse';
 import { UserResponse } from '../users/dtos/userResponse';
-import { JwtParams } from '../tokens/types/JwtParams.type';
 import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
 import { JwtPayload } from '../tokens/types/JwtPayload';
 import { UsersRepository } from '../users/users.repository';
@@ -43,10 +42,16 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const user: User = await this.usersService.getUserByEmail(loginDto.email);
+    const user: User = await this.usersRepository.getUserByEmail(
+      loginDto.email,
+    );
 
-    if (!(await this.validatePassword(user.password, loginDto.password)))
-      throw new BadRequestException('Password is incorrect');
+    if (
+      !user ||
+      !(await this.validatePassword(user.password, loginDto.password))
+    ) {
+      throw new BadRequestException('wrong_credentials');
+    }
 
     const tokensResponse: TokensResponse = await this.generateAndSaveTokens(
       user.id,
@@ -80,7 +85,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not exists');
     }
 
-    await this.deleteUserToken(+payload.sub, refreshToken);
+    await this.deleteUserToken(refreshToken);
     return user;
   }
 
@@ -114,12 +119,10 @@ export class AuthService {
       throw new BadRequestException('Token ID required');
     }
 
-    const payload: JwtParams = {} as JwtPayload;
-
-    await this.deleteUserToken(+payload.sub, refreshToken);
+    await this.deleteUserToken(refreshToken);
   }
 
-  async deleteUserToken(userId: number, token: string): Promise<void> {
-    await this.usersRepository.deleteUserToken({ userId, token });
+  async deleteUserToken(token: string): Promise<void> {
+    await this.usersRepository.deleteUserToken({ token });
   }
 }

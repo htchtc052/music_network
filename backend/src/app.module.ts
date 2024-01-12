@@ -16,11 +16,13 @@ import { CaslModule } from './casl/casl.module';
 import { UsersProfileModule } from './users-profile/usersProfile.module';
 import { PagesModule } from './pages/pages.module';
 import { TracksModule } from './tracks/tracks.module';
+import { LangModule } from './lang.module';
 
 @Module({
   imports: [
     JwtModule.register({ global: true }),
     CaslModule,
+    LangModule,
     AccountModule,
     UsersModule,
     UsersProfileModule,
@@ -64,6 +66,7 @@ import { TracksModule } from './tracks/tracks.module';
           },
         };
       },
+
       inject: [ConfigService],
     }),
     ServeStaticModule.forRootAsync({
