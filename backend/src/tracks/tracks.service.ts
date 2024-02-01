@@ -1,25 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Page, Track, TrackFile, User } from '@prisma/client';
+import { Track, TrackFile, User } from '@prisma/client';
 import { EditTrackInfoDto } from './dtos/editTrackInfo.dto';
 import { TrackResponse } from './dtos/track.response';
 import { TracksRepository } from './tracksRepository';
 import { TrackWithFile } from './types/track.types';
 import { CreateTrackDto } from './dtos/createTrack.dto';
 import { CreateTrackFileDto } from './dtos/createTrackFile.dto';
-import { PagesService } from '../pages/pages.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class TracksService {
   constructor(
     private tracksRepository: TracksRepository,
-    private pagesService: PagesService,
+    private usersService: UsersService,
   ) {}
 
   async createTrackByUploadedFile(
-    page: Page,
+    user: User,
     uploadedFile: Express.Multer.File,
   ): Promise<TrackResponse> {
-    const track: Track = await this.createTrack(page, {
+    const track: Track = await this.createTrack(user, {
       title: uploadedFile.originalname,
     });
 
@@ -33,13 +33,12 @@ export class TracksService {
   }
 
   async createTrack(
-    page: Page,
+    user: User,
     createTrackDto: CreateTrackDto,
   ): Promise<Track> {
     return this.tracksRepository.createTrack({
       title: createTrackDto.title,
-      userId: page.userId,
-      pageId: page.id,
+      userId: user.id,
     });
   }
 
@@ -65,6 +64,29 @@ export class TracksService {
     return track;
   }
 
+  async getCatalogTracks(): Promise<TrackResponse[]> {
+    const tracks: TrackWithFile[] =
+      await this.tracksRepository.getCatalogTracks();
+    return tracks.map((track: TrackWithFile) => new TrackResponse(track));
+  }
+
+  async getTracksByUser(
+    ownerUser: User,
+    guestUser: User,
+  ): Promise<TrackResponse[]> {
+    const includePrivate = this.usersService.canReadPrivateData(
+      ownerUser,
+      guestUser,
+    );
+
+    const tracks: TrackWithFile[] = await this.tracksRepository.getTracksByUser(
+      ownerUser,
+      includePrivate,
+    );
+
+    return tracks.map((track: TrackWithFile) => new TrackResponse(track));
+  }
+
   async editTrackInfo(
     track: Track,
     editTrackInfoDto: EditTrackInfoDto,
@@ -86,19 +108,5 @@ export class TracksService {
     )) as Track;
 
     return deletedTrack;
-  }
-
-  async getTracksByPage(page: Page, guestUser: User): Promise<TrackResponse[]> {
-    const includePrivate = this.pagesService.canReadPrivateData(
-      page,
-      guestUser,
-    );
-
-    const tracks: TrackWithFile[] = await this.tracksRepository.getTracksByPage(
-      page,
-      includePrivate,
-    );
-
-    return tracks.map((track: TrackWithFile) => new TrackResponse(track));
   }
 }

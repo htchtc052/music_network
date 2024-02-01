@@ -7,21 +7,11 @@ import { UsersRepository } from '../users/users.repository';
 import { GetUserProfileMiddleware } from './middlewares/getUserProfile.middleware';
 import { TracksService } from '../tracks/tracks.service';
 import { TracksRepository } from '../tracks/tracksRepository';
-import { PagesService } from '../pages/pages.service';
-import { PagesRepository } from '../pages/pages.repository';
-import { PagesModule } from '../pages/pages.module';
 
 @Module({
-  imports: [ConfigModule, TracksModule, PagesModule],
+  imports: [ConfigModule, TracksModule],
   controllers: [UsersProfileController],
-  providers: [
-    UsersService,
-    UsersRepository,
-    TracksService,
-    TracksRepository,
-    PagesService,
-    PagesRepository,
-  ],
+  providers: [UsersService, UsersRepository, TracksService, TracksRepository],
   exports: [UsersService],
 })
 export class UsersProfileModule implements NestModule {

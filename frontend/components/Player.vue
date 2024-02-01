@@ -46,8 +46,6 @@ const timeUpdateListener = () => {
 
   ///const progressPercent = (currentTime / duration.value) * 100;
   progressBar.value.value = currentTime.value;
-
-  console.debug(`timeUpdateListener currentTime=${currentTime.value}`);
 };
 
 const updateTime = () => {
@@ -113,22 +111,12 @@ const unsetPause = () => {
   console.log("unsetPause");
   audioPlayer.value?.pause();
 };
-
-const timerLeft = "0:10";
-const timerSeek = "0:20";
 </script>
 <template>
-  <div
-    class="fixed bottom-0 bg-white container mx-auto px-2 pl-1 pt-2 border border-green-700"
-  >
+  <div class="player_container">
     <div class="flex items-center">
-      <span
-        class="mx-2 text-2xl sm:block cursor-pointer"
-        title="Prev"
-        @click="prevClick()"
-      >
+      <span class="prev_btn" title="Prev" @click="prevClick()">
         <svg
-          class="h-6 w-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -138,62 +126,43 @@ const timerSeek = "0:20";
             d="M15 19l-7-7 7-7"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="{2}"
+            strokeWidth="2px"
           />
         </svg>
       </span>
 
-      <div
-        class="text-yellow-400 border border-gray-300 border-dotted rounded-lg mx-1 flex items-center justify-center"
-      >
-        <div
-          v-if="pause"
-          class="p-1 flex items-center cursor-pointer"
-          @click="unsetPause()"
-        >
-          <svg
-            class="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M5 3l14 9-14 9V3z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="{2}"
-            />
-          </svg>
-        </div>
-        <div
-          v-else
-          class="p-1 flex items-center cursor-pointer"
-          @click="setPause()"
-        >
-          <svg
-            class="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M6 4h4v16H6zM14 4h4v16h-4z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="{2}"
-            />
-          </svg>
-        </div>
-      </div>
-      <span
-        class="mx-2 text-2xl sm:block cursor-pointer"
-        title="Next"
-        @click="nextClick()"
-      >
+      <div v-if="pause" class="pause_btn" @click="unsetPause()">
         <svg
-          class="h-6 w-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5 3l14 9-14 9V3z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2px"
+          />
+        </svg>
+      </div>
+      <div v-else class="pause_btn" @click="setPause()">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 4h4v16H6zM14 4h4v16h-4z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2px"
+          />
+        </svg>
+      </div>
+      <span class="next_btn" title="Next" @click="nextClick()">
+        <svg
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -203,7 +172,7 @@ const timerSeek = "0:20";
             d="M9 5l7 7-7 7"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="{2}"
+            strokeWidth="2px"
           />
         </svg>
       </span>
@@ -240,3 +209,4 @@ const timerSeek = "0:20";
     </div>
   </div>
 </template>
+<style></style>

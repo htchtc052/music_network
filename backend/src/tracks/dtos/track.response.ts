@@ -13,10 +13,6 @@ export class TrackResponse {
 
   @ApiProperty({ required: true })
   @Expose()
-  pageId: number;
-
-  @ApiProperty({ required: true })
-  @Expose()
   title: string;
 
   @Expose()

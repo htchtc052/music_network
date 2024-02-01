@@ -2,6 +2,7 @@ import { useFetchInstance } from "~/composables/useFetchInstance";
 import type {
   AuthUserData,
   CreatePageInput,
+  EditTrackInfoInput,
   LoginInput,
   Page,
   RegisterInput,
@@ -40,13 +41,13 @@ export const useClientApi = () => {
           body: createPageInput,
         }),
     },
-    pages: {
-      getPage: (slug: string) =>
-        http<Page>("/pages/" + slug, {
+    userProfile: {
+      getUserProfile: (id: number) =>
+        http<User>("/users/" + id, {
           method: "GET",
         }),
-      getPageTracks: (slug: string) =>
-        http<Track[]>("/pages/" + slug + "/tracks", {
+      getUserTracks: (id: number) =>
+        http<Track[]>("/users/" + id + "/tracks", {
           method: "GET",
         }),
     },
@@ -54,6 +55,19 @@ export const useClientApi = () => {
       getTrack: (id: number) =>
         http<Track>("/tracks/" + id, {
           method: "GET",
+        }),
+      getCatalogTracks: () =>
+        http<Track[]>("/tracks/", {
+          method: "GET",
+        }),
+      editTrackInfo: (id: number, editTrackInfoInput: EditTrackInfoInput) =>
+        http<Track>("/tracks/" + id + "/editTrack", {
+          method: "POST",
+          body: editTrackInfoInput,
+        }),
+      deleteTrack: (id: number, editTrackInfoInput: EditTrackInfoInput) =>
+        http<Track>("/tracks/" + id + "/deleteTrack", {
+          method: "DELETE",
         }),
     },
   };

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useAuthStore } from "~/stores/useAuthStore";
 import type { LoginInput } from "~/types/types";
+import { storeToRefs } from "pinia";
 
 definePageMeta({ middleware: ["guest"] });
 
@@ -16,6 +17,8 @@ const form_errors = ref<LoginInput>({
 
 const auth = useAuthStore();
 
+const { user } = storeToRefs(auth);
+
 const clearErrors = () => {
   form_errors.value.email = "";
   form_errors.value.password = "";
@@ -24,7 +27,7 @@ const clearErrors = () => {
 const handleLogin = async () => {
   try {
     await auth.login(form.value);
-    await navigateTo({ path: "/account" });
+    await navigateTo({ path: "/users/" + user.value.id });
   } catch (err: any) {
     clearErrors();
 

@@ -6,22 +6,13 @@ import { AccountController } from './account.controller';
 import { AuthModule } from '../auth/auth.module';
 import { TokensModule } from '../tokens/tokens.module';
 import { TokensService } from '../tokens/tokens.service';
-import { UsersRepository } from '../users/users.repository';
 import { EmailModule } from '../email/email.module';
-import { PagesModule } from '../pages/pages.module';
-import { PagesService } from '../pages/pages.service';
-import { PagesRepository } from '../pages/pages.repository';
+import { UsersRepository } from '../users/users.repository';
 
 @Module({
-  imports: [UsersModule, AuthModule, TokensModule, EmailModule, PagesModule],
+  imports: [UsersModule, AuthModule, TokensModule, EmailModule],
   controllers: [AccountController],
 
-  providers: [
-    UsersService,
-    TokensService,
-    UsersRepository,
-    PagesService,
-    PagesRepository,
-  ],
+  providers: [UsersService, TokensService, UsersRepository],
 })
 export class AccountModule {}

@@ -15,7 +15,6 @@ export default defineNuxtConfig({
   css: ["~/assets/main.scss"],
   postcss: {
     plugins: {
-      tailwindcss: {},
       autoprefixer: {},
     },
   },

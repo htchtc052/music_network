@@ -47,6 +47,14 @@ const handleLogout = async function () {
           </nuxt-link>
         </div>
       </div>
+      <div class="main_menu">
+        <nuxt-link
+          :to="localPath('/tracks')"
+          class="bg-blue-700 text-white px-4 py-2"
+        >
+          Tracks
+        </nuxt-link>
+      </div>
     </header>
     <slot />
     <footer>

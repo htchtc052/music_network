@@ -1,4 +1,4 @@
-import { Page, Track, User } from '@prisma/client';
+import { Track, User } from '@prisma/client';
 import { AbilityBuilder, PureAbility } from '@casl/ability';
 import { createPrismaAbility, PrismaQuery, Subjects } from '@casl/prisma';
 
@@ -10,7 +10,7 @@ export enum Action {
   Edit = 'update',
 }
 
-type AppSubjects = { User: User; Track: Track; Page: Page };
+type AppSubjects = { User: User; Track: Track };
 
 export type AppAbility = PureAbility<
   [Action, Subjects<AppSubjects>],
@@ -24,7 +24,6 @@ export class AbilityFactory {
     if (user?.isAdmin) {
       builder.can(Action.Manage, 'User');
       builder.can(Action.Manage, 'Track');
-      builder.can(Action.Manage, 'Page');
     } else {
       builder.can(Action.Read, 'Track', { private: false });
 
@@ -36,15 +35,11 @@ export class AbilityFactory {
 
         builder.can(Action.ReadPrivateData, 'User', { id: user.id });
 
-        builder.can(Action.ReadPrivateData, 'Page', { userId: user.id });
-
         builder.can(Action.ReadPrivateData, 'Track', {
           userId: user.id,
         });
 
         builder.can(Action.Edit, 'Track', { userId: user.id });
-
-        builder.can(Action.Edit, 'Page', { userId: user.id });
       }
     }
 

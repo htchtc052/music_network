@@ -10,10 +10,19 @@ export type LoginInput = {
   password: string;
 };
 
+export enum Genders {
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  NOT_SPECIFIED = "NOT_SPECIFIED",
+}
+
 export type User = {
   id: number;
   username: string;
   email: string;
+  gender: Genders;
+  firstName: string;
+  lastName: string;
 };
 
 export type AuthUserData = {
@@ -60,4 +69,10 @@ export type Track = {
   createdAt: Date;
   updatedAt: Date;
   file: TrackFile;
+};
+
+export type EditTrackInfoInput = {
+  title: string;
+  slug: string;
+  description?: string;
 };

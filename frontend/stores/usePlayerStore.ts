@@ -96,7 +96,6 @@ export const usePlayerStore = defineStore("player", () => {
   return {
     tracks,
     track,
-    // filePath,
     place,
     position,
     pause,

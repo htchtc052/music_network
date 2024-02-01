@@ -1,4 +1,4 @@
-import { Page, PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -42,39 +42,6 @@ export const seed = async (): Promise<void> => {
     },
   });
 
-  const page1: Page = await prisma.page.upsert({
-    where: { slug: 'page1' },
-    update: {},
-    create: {
-      userId: user1.id,
-      title: 'page1 title',
-      description: 'page1 description',
-      slug: 'page_slug_1',
-    },
-  });
-
-  await prisma.page.upsert({
-    where: { slug: 'page2' },
-    update: {},
-    create: {
-      userId: user1.id,
-      title: 'page2 title',
-      description: 'page2 description',
-      slug: 'page_slug_2',
-    },
-  });
-
-  await prisma.page.upsert({
-    where: { slug: 'page3' },
-    update: {},
-    create: {
-      userId: user2.id,
-      title: 'page3 title',
-      description: 'page3 description',
-      slug: 'page_slug_3',
-    },
-  });
-
   const trackId1 = 1;
 
   await prisma.trackFile.upsert({
@@ -93,7 +60,6 @@ export const seed = async (): Promise<void> => {
     update: {},
     create: {
       userId: user1.id,
-      pageId: 1,
       title: 'track 1 title',
       description: 'page1 description',
       hiddenDescription: 'page1 hidden description',

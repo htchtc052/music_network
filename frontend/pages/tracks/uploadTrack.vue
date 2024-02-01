@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import type { ComputedRef } from "vue";
 import { useAuthStore, useFetchInstance } from "#imports";
 import { storeToRefs } from "pinia";
-import type { Page, Track } from "~/types/types";
+
+definePageMeta({ middleware: ["auth"] });
 
 const localPath = useLocalePath();
 
@@ -10,29 +10,8 @@ const api = useClientApi();
 
 const route = useRoute();
 
-const slug: string = route.params.slug as string;
-
-const { data, pending, error } = await useAsyncData<{
-  page: Page;
-}>("page.uploadTrack", async () => {
-  const page = await api.pages.getPage(slug);
-  return { page };
-});
-
-const page = ref<Page>({} as Page);
-
-if (data.value) {
-  page.value = data.value.page;
-}
-
-console.debug(`page: ` + page.value.title, `error ` + error.value?.stack);
-
 const auth = useAuthStore();
 const { user } = storeToRefs(auth);
-
-const isOwner: ComputedRef<boolean> = computed(
-  () => page.value.userId === user?.value?.id
-);
 
 const file = ref<File | null>(null);
 
@@ -55,7 +34,7 @@ const handleFileUpload = async () => {
 
     const body = new FormData();
     body.append("trackFile", file.value, file.value.name);
-    const data = await fetchInstance("/pages/" + slug + "/uploadTrack", {
+    const data = await fetchInstance("/tracks/uploadTrack", {
       method: "POST",
       body,
       onUploadProgress: (progressEvent: any) => {
@@ -66,18 +45,16 @@ const handleFileUpload = async () => {
     });
 
     console.log("after upload file", data);
-    navigateTo("/pages/" + slug);
+    navigateTo("/users/" + user.value.id);
   } catch (err) {
     console.error(err);
   }
 };
-
-console.debug(`isOwner`, isOwner.value);
 </script>
 <template>
   <div class="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="mb-4">
-      <h1 class="text-2xl font-semibold mb-4">Page: {{ page.title }}</h1>
+      <h1 class="text-2xl font-semibold mb-4">User: {{ user.username }}</h1>
       <div>Track upload</div>
 
       <div v-if="progress">{{ progress }}</div>
@@ -98,5 +75,3 @@ console.debug(`isOwner`, isOwner.value);
     </div>
   </div>
 </template>
-
-<style scoped></style>

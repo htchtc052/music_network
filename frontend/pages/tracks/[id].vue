@@ -38,8 +38,6 @@ const { user } = storeToRefs(auth);
 const isOwner: ComputedRef<boolean> = computed(
   () => track.value.userId === user?.value?.id
 );
-
-console.debug(`isOwner`, isOwner.value);
 </script>
 <template>
   <div class="flex flex-col items-center w-full">

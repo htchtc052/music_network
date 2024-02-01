@@ -14,7 +14,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { AccessTokenGuard } from './auth/guards/accessTokenGuard';
 import { CaslModule } from './casl/casl.module';
 import { UsersProfileModule } from './users-profile/usersProfile.module';
-import { PagesModule } from './pages/pages.module';
 import { TracksModule } from './tracks/tracks.module';
 import { LangModule } from './lang.module';
 
@@ -26,7 +25,6 @@ import { LangModule } from './lang.module';
     AccountModule,
     UsersModule,
     UsersProfileModule,
-    PagesModule,
     AuthModule,
     TracksModule,
     TokensModule,

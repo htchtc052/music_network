@@ -9,8 +9,6 @@ import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 import { readdirSync, unlinkSync } from 'fs';
 import { createTestingModule } from './utils/createTestingModule';
-import { PageResponse } from '../src/pages/dtos/page.response';
-import { CreatePageDto } from '../src/pages/dtos/createPage.dto';
 
 describe('Auth routes', () => {
   let app: INestApplication;
@@ -18,7 +16,6 @@ describe('Auth routes', () => {
 
   let ownerUser: AuthResponse;
   let guestUser: AuthResponse;
-  let ownerPage: PageResponse;
 
   class MockMailerService {}
 
@@ -52,16 +49,6 @@ describe('Auth routes', () => {
 
     guestUser = resGuestRegister.body;
 
-    const resCreatePage = await request(app.getHttpServer())
-      .post('/pages')
-      .set('Authorization', 'Bearer ' + ownerUser.accessToken)
-      .send({
-        title: `page.${testSuiteName}title`,
-        slug: `page_${testSuiteName}_slug`,
-      } as CreatePageDto);
-
-    ownerPage = resCreatePage.body;
-
     configService = moduleFixture.get<ConfigService>(ConfigService);
   });
 
@@ -92,7 +79,7 @@ describe('Auth routes', () => {
     try {
       //console.debug(ownerPage);
       const res = await request(app.getHttpServer())
-        .post('/pages/' + ownerPage.slug + '/uploadTrack')
+        .post('/tracks/uploadTrack')
         .set('Authorization', 'Bearer ' + ownerUser.accessToken)
         .attach('trackFile', filePath);
 
@@ -106,7 +93,7 @@ describe('Auth routes', () => {
   it('/tracks (POST) - create second track', async () => {
     try {
       const res = await request(app.getHttpServer())
-        .post('/pages/' + ownerPage.slug + '/uploadTrack')
+        .post('/tracks/uploadTrack')
         .set('Authorization', 'Bearer ' + ownerUser.accessToken)
         .attach('trackFile', filePath);
 
@@ -181,19 +168,26 @@ describe('Auth routes', () => {
     expect(res.statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
-  it('/pages/:slug/tracks (Get) - get all page tracks as owner', async () => {
+  it('/users/:id/tracks (Get) - get all user tracks as owner', async () => {
     const res = await request(app.getHttpServer())
-      .get('/pages/' + ownerPage.slug + '/tracks')
+      .get('/users/' + ownerUser.user.id + '/tracks')
       .set('Authorization', 'Bearer ' + ownerUser.accessToken);
 
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body).toHaveLength(2);
   });
 
-  it('/pages/:slug/tracks (Get) - get only public page tracks as guest', async () => {
+  it('/users/:id/tracks (Get) - get only public user tracks as guest', async () => {
     const res = await request(app.getHttpServer())
-      .get('/pages/' + ownerPage.slug + '/tracks')
+      .get('/users/' + ownerUser.user.id + '/tracks')
       .set('Authorization', 'Bearer ' + guestUser.accessToken);
+    expect(res.statusCode).toEqual(HttpStatus.OK);
+    expect(res.body).toHaveLength(1);
+  });
+
+  it('/tracks (Get) - get only public tracks in catalog', async () => {
+    const res = await request(app.getHttpServer()).get('/tracks');
+
     expect(res.statusCode).toEqual(HttpStatus.OK);
     expect(res.body).toHaveLength(1);
   });
