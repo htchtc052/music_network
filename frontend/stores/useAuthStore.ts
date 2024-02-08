@@ -1,11 +1,5 @@
-import type {
-  AuthUserData,
-  LoginInput,
-  RegisterInput,
-  TokensData,
-  User,
-} from "~/types/types";
 import { useClientApi } from "~/composables/useClientApi";
+import type { AuthUserData, LoginInput, RegisterInput, TokensData, User } from "~/types/types";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);

@@ -1,46 +1,46 @@
 <script lang="ts" setup>
-import { useClientApi } from "#imports";
-import type { CreatePageInput } from "~/types/types";
+  import { useClientApi } from "#imports";
+  import type { CreatePageInput } from "~/types/types";
 
-definePageMeta({ middleware: ["auth"] });
+  definePageMeta({ middleware: ["auth"] });
 
-const localPath = useLocalePath();
+  const localPath = useLocalePath();
 
-const form = ref<CreatePageInput>({
-  title: "",
-  slug: "",
-  description: "",
-});
+  const form = ref<CreatePageInput>({
+    title: "",
+    slug: "",
+    description: "",
+  });
 
-const form_errors = ref<CreatePageInput>({
-  title: "",
-  slug: "",
-});
+  const form_errors = ref<CreatePageInput>({
+    title: "",
+    slug: "",
+  });
 
-const clearErrors = () => {
-  form_errors.value.title = "";
-  form_errors.value.slug = "";
-  form_errors.value.description = "";
-};
+  const clearErrors = () => {
+    form_errors.value.title = "";
+    form_errors.value.slug = "";
+    form_errors.value.description = "";
+  };
 
-const api = useClientApi();
-const handleCreatePage = async () => {
-  try {
-    const data = await api.account.createPage(form.value);
+  const api = useClientApi();
+  const handleCreatePage = async () => {
+    try {
+      const data = await api.account.createPage(form.value);
 
-    if (data) {
-      navigateTo("/account");
+      if (data) {
+        navigateTo("/account");
+      }
+    } catch (err: any) {
+      clearErrors();
+
+      if (err.data?.statusCode == 400) {
+        form_errors.value = err.data?.errors;
+      } else {
+        console.error(err.stack);
+      }
     }
-  } catch (err: any) {
-    clearErrors();
-
-    if (err.data?.statusCode == 400) {
-      form_errors.value = err.data?.errors;
-    } else {
-      console.error(err.stack);
-    }
-  }
-};
+  };
 </script>
 
 <template>
@@ -50,22 +50,13 @@ const handleCreatePage = async () => {
         {{ $t("pages.register.title") }}
       </h2>
     </div>
-    <div
-      class="mt-10 p-10 mx-auto rounded-xl border border-green-700 w-full max-w-md"
-    >
-      <form
-        action="#"
-        autocomplete="off"
-        class="space-y-6"
-        @submit.prevent="handleCreatePage"
-      >
+    <div class="mx-auto mt-10 w-full max-w-md rounded-xl border border-green-700 p-10">
+      <form action="#" autocomplete="off" class="space-y-6" @submit.prevent="handleCreatePage">
         <div>
           <div v-if="form_errors?.title" class="text-red-700">
             {{ form_errors?.title }}
           </div>
-          <label class="block text-sm text-gray-800 mb-1" for="username"
-            >Title</label
-          >
+          <label class="mb-1 block text-sm text-gray-800" for="username">Title</label>
           <input
             v-model="form.title"
             class="w-full rounded-md"
@@ -79,9 +70,7 @@ const handleCreatePage = async () => {
           <div v-if="form_errors?.slug" class="text-red-700">
             {{ form_errors?.slug }}
           </div>
-          <label class="block text-sm text-gray-800 mb-1" for="username"
-            >Page url shortname</label
-          >
+          <label class="mb-1 block text-sm text-gray-800" for="username">Page url shortname</label>
           <input
             v-model="form.slug"
             class="w-full rounded-md"
@@ -92,9 +81,7 @@ const handleCreatePage = async () => {
         </div>
 
         <div>
-          <label class="block text-sm text-gray-800 mb-1" for="email"
-            >Description</label
-          >
+          <label class="mb-1 block text-sm text-gray-800" for="email">Description</label>
           <textarea
             v-model="form.description"
             name="description"
@@ -102,10 +89,7 @@ const handleCreatePage = async () => {
           ></textarea>
         </div>
         <div>
-          <button
-            class="bg-blue-500 text-white px-4 py-2 rounded-md w-full"
-            type="submit"
-          >
+          <button class="w-full rounded-md bg-blue-500 px-4 py-2 text-white" type="submit">
             Create page
           </button>
         </div>

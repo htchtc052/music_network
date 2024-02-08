@@ -1,5 +1,5 @@
-import type { $Fetch } from "nitropack";
 import type { TokensData } from "~/types/types";
+import type { $Fetch } from "nitropack";
 
 let fetchInstance: $Fetch;
 
@@ -22,8 +22,7 @@ export const useFetchInstance = (): $Fetch => {
       options.headers = {
         ...(options.headers || {}),
         "Accept-Language": locale.value,
-        Authorization:
-          accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "",
+        Authorization: accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "",
       };
 
       //console.debug(options.headers);
@@ -37,13 +36,10 @@ export const useFetchInstance = (): $Fetch => {
             `url`,
             _ctx.response.url
           );
-          const data = await $fetch<TokensData>(
-            config.public.apiUrl + "/auth/refreshTokens",
-            {
-              method: "POST",
-              body: { refreshToken: refreshToken.value },
-            }
-          );
+          const data = await $fetch<TokensData>(config.public.apiUrl + "/auth/refreshTokens", {
+            method: "POST",
+            body: { refreshToken: refreshToken.value },
+          });
 
           console.debug("onResponseError() 401 intercept after refresh req");
           accessToken.value = data.accessToken;
@@ -51,10 +47,7 @@ export const useFetchInstance = (): $Fetch => {
 
           return fetchInstance(_ctx.request);
         } catch (err: any) {
-          console.error(
-            `onResponseError() 401 intercept ERROR refresh req`,
-            err.statusCode
-          );
+          console.error(`onResponseError() 401 intercept ERROR refresh req`, err.statusCode);
           accessToken.value = null;
           refreshToken.value = null;
         }

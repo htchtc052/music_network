@@ -4,19 +4,19 @@
   "about_title": "Заголовок страницы О нас",
   "about_link": "О нас",
   "pages": {
-    "register":{
-      "meta":{
-        "title":"Регистрация",
-        "description":"Страница регистрации"
+    "register": {
+      "meta": {
+        "title": "Регистрация",
+        "description": "Страница регистрации"
       },
-      "title":"Регистрация"
+      "title": "Регистрация"
     },
-    "login":{
-      "meta":{
-        "title":"Авторизация",
-        "description":"Страница авторизация"
+    "login": {
+      "meta": {
+        "title": "Авторизация",
+        "description": "Страница авторизация"
       },
-      "title":"Авторизация"
+      "title": "Авторизация"
     }
   }
 }

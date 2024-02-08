@@ -1,47 +1,47 @@
 <script lang="ts" setup>
-import { useAuthStore } from "~/stores/useAuthStore";
-import type { LoginInput } from "~/types/types";
-import { storeToRefs } from "pinia";
+  import { useAuthStore } from "~/stores/useAuthStore";
+  import { storeToRefs } from "pinia";
+  import type { LoginInput } from "~/types/types";
 
-definePageMeta({ middleware: ["guest"] });
+  definePageMeta({ middleware: ["guest"] });
 
-const form = ref<LoginInput>({
-  email: "",
-  password: "",
-});
+  const form = ref<LoginInput>({
+    email: "",
+    password: "",
+  });
 
-const form_errors = ref<LoginInput>({
-  email: "",
-  password: "",
-});
+  const form_errors = ref<LoginInput>({
+    email: "",
+    password: "",
+  });
 
-const auth = useAuthStore();
+  const auth = useAuthStore();
 
-const { user } = storeToRefs(auth);
+  const { user } = storeToRefs(auth);
 
-const clearErrors = () => {
-  form_errors.value.email = "";
-  form_errors.value.password = "";
-};
+  const clearErrors = () => {
+    form_errors.value.email = "";
+    form_errors.value.password = "";
+  };
 
-const handleLogin = async () => {
-  try {
-    await auth.login(form.value);
-    await navigateTo({ path: "/users/" + user.value.id });
-  } catch (err: any) {
-    clearErrors();
+  const handleLogin = async () => {
+    try {
+      await auth.login(form.value);
+      await navigateTo({ path: "/users/" + user.value?.id });
+    } catch (err: any) {
+      clearErrors();
 
-    if (err.data?.statusCode == 400) {
-      if (err.data.message === "wrong_credentials") {
-        form_errors.value.email = "Invalid credentials";
+      if (err.data?.statusCode == 400) {
+        if (err.data.message === "wrong_credentials") {
+          form_errors.value.email = "Invalid credentials";
+        } else {
+          form_errors.value = err.data.errors;
+        }
       } else {
-        form_errors.value = err.data.errors;
+        console.error(err.stack);
       }
-    } else {
-      console.error(err.stack);
     }
-  }
-};
+  };
 </script>
 
 <template>
@@ -51,22 +51,13 @@ const handleLogin = async () => {
         {{ $t("pages.login.title") }}
       </h2>
     </div>
-    <div
-      class="mt-10 p-10 mx-auto rounded-xl border border-green-700 w-full max-w-md"
-    >
-      <form
-        action="#"
-        autocomplete="off"
-        class="space-y-6"
-        @submit.prevent="handleLogin"
-      >
+    <div class="mx-auto mt-10 w-full max-w-md rounded-xl border border-green-700 p-10">
+      <form action="#" autocomplete="off" class="space-y-6" @submit.prevent="handleLogin">
         <div v-if="form_errors?.email" class="text-red-700">
           {{ form_errors?.email }}
         </div>
         <div>
-          <label class="block text-sm text-gray-800 mb-1" for="email"
-            >Email</label
-          >
+          <label class="mb-1 block text-sm text-gray-800" for="email">Email</label>
           <input
             id="email"
             v-model="form.email"
@@ -81,9 +72,7 @@ const handleLogin = async () => {
           <div v-if="form_errors?.password" class="text-red-700">
             {{ form_errors?.password }}
           </div>
-          <label class="block text-sm text-gray-800 mb-1" for="password"
-            >Password</label
-          >
+          <label class="mb-1 block text-sm text-gray-800" for="password">Password</label>
           <input
             id="password"
             v-model="form.password"
@@ -96,10 +85,7 @@ const handleLogin = async () => {
         </div>
 
         <div>
-          <button
-            class="bg-blue-500 text-white px-4 py-2 rounded-md w-full"
-            type="submit"
-          >
+          <button class="w-full rounded-md bg-blue-500 px-4 py-2 text-white" type="submit">
             Sign in
           </button>
         </div>

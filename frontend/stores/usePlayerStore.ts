@@ -66,11 +66,7 @@ export const usePlayerStore = defineStore("player", () => {
     }
   };
 
-  const playTrack = (
-    newTracks: Track[],
-    newPosition: number,
-    newPlace: string
-  ) => {
+  const playTrack = (newTracks: Track[], newPosition: number, newPlace: string) => {
     if (newPlace == place.value && newPosition == position.value) {
       console.debug(
         `Play track method. Click on playing track. Need toogle pause pause current value=${pause.value}`
