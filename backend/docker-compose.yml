@@ -1,27 +1,27 @@
 version: "3.7"
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - .:/app
-      - /app/node_modules
-    restart: always
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}?schema=public
-      NODE_ENV: ${NODE_ENV}
-    command: npm run start:dev
-    ports:
-      - "${API_PORT}:${API_PORT}"
-    depends_on:
-      - postgres
-    networks:
-      - music-network
+#  api:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - .:/app
+#      - /app/node_modules
+#    restart: always
+#    environment:
+#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}?schema=public
+#      NODE_ENV: ${NODE_ENV}
+#    command: npm run start:dev
+#    ports:
+#      - "${API_PORT}:${API_PORT}"
+#    depends_on:
+#      - postgres
+#    networks:
+#      - music-network
   postgres:
     env_file: .env
     container_name: postgres
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -36,7 +36,7 @@ services:
   postgres-test:
     env_file: .env.test
     container_name: postgres-test
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}

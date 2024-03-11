@@ -50,7 +50,7 @@ export class AuthService {
       !user ||
       !(await this.validatePassword(user.password, loginDto.password))
     ) {
-      throw new BadRequestException('wrong_credentials');
+      throw new BadRequestException('INVALID_CREDENTIALS');
     }
 
     const tokensResponse: TokensResponse = await this.generateAndSaveTokens(

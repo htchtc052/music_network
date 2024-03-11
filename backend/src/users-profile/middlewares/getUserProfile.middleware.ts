@@ -9,9 +9,10 @@ export class GetUserProfileMiddleware implements NestMiddleware {
   constructor(private readonly usersService: UsersService) {}
 
   async use(req: RequestWithUserProfile, res: Response, next: NextFunction) {
-    req.userProfile = await this.usersService.getUserById(
-      parseInt(req.params.id),
-    );
+    console.debug('req.params.id', req.params.id);
+    req.userProfile = await this.usersService.getUserById(+req.params.id);
+
+    //console.debug('req.users.profile', req.userProfile);
 
     next();
   }
